@@ -1,0 +1,22 @@
+name: bloc_devtools_extension
+description: >
+  Time-travel dev tools for flutter_bloc — inspired by Redux DevTools.
+  Inspect BLoC/Cubit states, events, and transitions with an in-app UI.
+  Supports state history, time travel, skip, jump, reset, and JSON inspection.
+version: 0.1.0
+homepage: https://github.com/example/bloc_devtools_extension
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  bloc: ">=8.1.0 <10.0.0"
+  flutter_bloc: ">=8.1.0 <10.0.0"
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
