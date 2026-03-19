@@ -1,0 +1,17 @@
+name: bloc_devtools_extension_devtools
+description: DevTools extension UI for bloc_devtools_extension.
+
+publish_to: none
+
+environment:
+  sdk: ">=3.2.0 <4.0.0"
+  flutter: ">=3.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  devtools_extensions: ^0.4.0
+  devtools_app_shared: ^0.4.0
+
+flutter:
+  uses-material-design: true

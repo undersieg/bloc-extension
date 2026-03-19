@@ -7,6 +7,8 @@ import 'counter_bloc.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   Bloc.observer = BlocDevToolsObserver(DevToolsStore.instance);
+  // Register VM service extension so the DevTools browser tab can query data.
+  registerBlocDevToolsServiceExtension(DevToolsStore.instance);
   runApp(const CounterApp());
 }
 

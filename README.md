@@ -1,52 +1,12 @@
 # bloc_devtools_extension
 
-Time-travel dev tools for `flutter_bloc` — inspired by [Redux DevTools](https://pub.dev/packages/redux_dev_tools).
+Time-travel dev tools for `flutter_bloc` — inspired by Redux DevTools.
 
-## Features
+Two ways to use it:
+1. **In-app widget** — `BlocDevToolsPanel` in a drawer (works immediately)
+2. **Flutter DevTools Extension** — a custom tab in the browser-based DevTools (requires a build step)
 
-### History tab
-- **Event timeline** with elapsed-time gap indicators between entries
-- **Processing time badges** on each transition (color-coded: green < 16ms, orange < 100ms, red > 100ms)
-- **Time-travel slider** with skip/jump controls
-- **BLoC type filter chips** when multiple BLoCs are active
-- **State inspector** with JSON view and toggleable **diff view** that highlights added/removed/changed fields
-
-### Graph tab
-- **Live BLoC connection map** showing all active Bloc and Cubit instances
-- **Relationship detection** via temporal correlation — if two BLoCs emit within 100ms, an edge is drawn between them
-- **Edge strength** grows with each correlated event pair (thicker line = stronger connection)
-- **Detail table** showing per-instance transition count and average processing time
-- **Color-coded legend** distinguishing Bloc (primary) from Cubit (tertiary)
-
-### Performance tab
-- **Summary cards**: average, fastest, slowest processing time, and total measured count
-- **Per-BLoC breakdown** with bar chart ranking by average processing time
-- **Top 10 slowest transitions** with event name and timing
-
-## Architecture
-
-```
-Your App
-  ├── CounterBloc ──┐
-  ├── AuthCubit  ───┤──▶ BlocDevToolsObserver
-  └── CartBloc   ───┘         │
-                              │ records transitions, lifecycle, timing
-                              ▼
-                        DevToolsStore
-                        ├── entries[]           (state history)
-                        ├── lifecycles{}        (create/close tracking)
-                        ├── relationships{}     (detected connections)
-                        └── performance helpers
-                              │
-                              │ notifies
-                              ▼
-                        BlocDevToolsPanel
-                        ├── History tab  (timeline + slider + diff inspector)
-                        ├── Graph tab    (connection map + detail table)
-                        └── Perf tab     (metrics + breakdown + slowest list)
-```
-
-## Quick start
+## Quick start — in-app widget
 
 ### 1. Add the dependency
 
@@ -71,89 +31,150 @@ void main() {
 
 ```dart
 Scaffold(
-  appBar: AppBar(
-    actions: [
-      Builder(
-        builder: (ctx) => IconButton(
-          icon: const Icon(Icons.bug_report),
-          onPressed: () => Scaffold.of(ctx).openEndDrawer(),
-        ),
-      ),
-    ],
-  ),
-  endDrawer: Drawer(
-    width: 360,
-    child: SafeArea(
-      child: BlocDevToolsPanel(store: DevToolsStore.instance),
-    ),
-  ),
+endDrawer: Drawer(
+width: 360,
+child: SafeArea(
+child: BlocDevToolsPanel(store: DevToolsStore.instance),
+),
+),
 )
 ```
 
-### 4. (Optional) Make states JSON-inspectable
+Done. Open the drawer and you get three tabs: History, Graph, Performance.
 
-Add `toJson()` to enable the diff view and formatted JSON inspector:
+---
 
-```dart
-class CounterState {
-  const CounterState({required this.count});
-  final int count;
-  Map<String, dynamic> toJson() => {'count': count};
-}
+## Flutter DevTools Extension (browser tab)
+
+This puts a **bloc_devtools_extension** tab directly in Flutter DevTools, right next to the Inspector, Profiler, etc.
+
+### How it works
+
+```
+Your running app (device/emulator)          Flutter DevTools (browser)
+┌──────────────────────────────┐           ┌──────────────────────────────┐
+│ BlocDevToolsObserver         │           │ Flutter Inspector, Profiler   │
+│         ↓                    │           │ ─────────────────────────────│
+│ DevToolsStore                │──VM svc──▶│ bloc_devtools_extension tab  │
+│         ↓                    │           │ (Flutter web app in iframe)  │
+│ registerBlocDevToolsService  │           │                              │
+│   Extension()                │           │                              │
+└──────────────────────────────┘           └──────────────────────────────┘
 ```
 
-## Global access
+### Step 1 — Register the VM service extension in your app
 
-**Singleton** (zero wiring):
-```dart
-// Anywhere in your app
-DevToolsStore.instance
-```
-
-**InheritedWidget provider** (explicit DI):
-```dart
-// At root
-DevToolsStoreProvider(
-  store: DevToolsStore.instance,
-  child: MaterialApp(...),
-)
-
-// In any descendant
-DevToolsStoreProvider.of(context)
-```
-
-## Composing with existing observers
+Add one line to `main()`:
 
 ```dart
-Bloc.observer = BlocDevToolsObserver(
-  DevToolsStore.instance,
-  innerObserver: MyLoggingObserver(),
-);
-```
-
-## Debug-only setup
-
-```dart
-import 'package:flutter/foundation.dart';
-
 void main() {
-  if (kDebugMode) {
-    Bloc.observer = BlocDevToolsObserver(DevToolsStore.instance);
-  }
-  runApp(MyApp());
+  Bloc.observer = BlocDevToolsObserver(DevToolsStore.instance);
+  registerBlocDevToolsServiceExtension(DevToolsStore.instance);  // ← add this
+  runApp(const MyApp());
 }
 ```
 
-## Running the example
+This registers `ext.bloc_devtools.*` endpoints that the DevTools web app queries.
+
+### Step 2 — Build the DevTools extension web app
 
 ```bash
-cd bloc_devtools_extension/example
-flutter create .
+cd bloc_devtools_extension/devtools_extension
+flutter pub get
+flutter build web --release --no-tree-shake-icons
+```
+
+### Step 3 — Copy the build output into the extension directory
+
+```bash
+# From the bloc_devtools_extension root:
+cp -r devtools_extension/build/web/* extension/devtools/build/
+```
+
+The final package structure should look like:
+
+```
+bloc_devtools_extension/
+  extension/
+    devtools/
+      config.yaml          ← extension metadata
+      build/               ← compiled Flutter web app
+        index.html
+        main.dart.js
+        ...
+  lib/                     ← the library (observer, store, widgets)
+  pubspec.yaml
+```
+
+### Step 4 — Run your app and open DevTools
+
+```bash
+cd your_app
 flutter pub get
 flutter run
 ```
 
-Tap +/−/reset and toggle the theme, then tap the bug icon to explore all three tabs.
+Open Flutter DevTools in your browser (the URL printed in the terminal). You'll see a new **bloc_devtools_extension** tab. Enable it when prompted.
+
+### Automating the build
+
+Add a script to your workflow:
+
+```bash
+#!/bin/bash
+# build_devtools_extension.sh
+cd bloc_devtools_extension/devtools_extension
+flutter build web --release --no-tree-shake-icons
+rm -rf ../extension/devtools/build
+cp -r build/web ../extension/devtools/build
+echo "DevTools extension built successfully"
+```
+
+---
+
+## Features
+
+### History tab
+- Event timeline with elapsed-time gap indicators
+- Processing time badges (green < 16ms, orange < 100ms, red)
+- Time-travel slider with skip/jump controls
+- BLoC type filter chips
+- State inspector with toggleable diff view
+
+### Graph tab
+- Live BLoC/Cubit connection map
+- Relationship detection via temporal correlation (100ms window)
+- Edge strength grows with each correlated event pair
+- Per-instance detail table
+
+### Performance tab
+- Summary cards (avg / fastest / slowest / count)
+- Per-BLoC breakdown with bar charts
+- Top 10 slowest transitions
+
+---
+
+## API summary
+
+### In your app (lib/)
+
+| Class | Purpose |
+|-------|---------|
+| `DevToolsStore` | State history, lifecycle, relationships, performance data |
+| `DevToolsStore.instance` | Global singleton |
+| `BlocDevToolsObserver` | BlocObserver that records everything |
+| `BlocDevToolsPanel` | In-app widget (3 tabs) |
+| `DevToolsStoreProvider` | InheritedWidget for widget-tree access |
+| `registerBlocDevToolsServiceExtension()` | VM service bridge for DevTools browser tab |
+
+### VM service endpoints (used by the DevTools extension)
+
+| Endpoint | Returns |
+|----------|---------|
+| `ext.bloc_devtools.getState` | Summary: entry count, alive blocs, avg timing |
+| `ext.bloc_devtools.getEntries` | State history (supports `sinceIndex` for incremental fetching) |
+| `ext.bloc_devtools.getGraph` | Alive blocs + detected relationships |
+| `ext.bloc_devtools.getPerformance` | Timing metrics, per-BLoC breakdown |
 
 ## License
 
