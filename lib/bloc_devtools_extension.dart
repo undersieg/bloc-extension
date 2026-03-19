@@ -25,5 +25,7 @@ library bloc_devtools_extension;
 
 export 'src/dev_tools_entry.dart';
 export 'src/dev_tools_store.dart';
+export 'src/bloc_lifecycle.dart';
 export 'src/bloc_dev_tools_observer.dart';
 export 'src/widgets/bloc_dev_tools_panel.dart';
+export 'src/widgets/dev_tools_store_provider.dart';

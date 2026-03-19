@@ -1,47 +1,46 @@
-import 'package:bloc_devtools_extension/bloc_devtools_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bloc_devtools_extension/bloc_devtools_extension.dart';
 
 import 'counter_bloc.dart';
 
-// ─── Dev tools store (global for the app) ───────────────────────────────────
-
-final devToolsStore = DevToolsStore();
-
-// ─── Entry point ────────────────────────────────────────────────────────────
-
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Attach the dev tools observer so every BLoC/Cubit transition is recorded.
-  Bloc.observer = BlocDevToolsObserver(devToolsStore);
-
+  Bloc.observer = BlocDevToolsObserver(DevToolsStore.instance);
   runApp(const CounterApp());
 }
-
-// ─── App ────────────────────────────────────────────────────────────────────
 
 class CounterApp extends StatelessWidget {
   const CounterApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'BLoC DevTools Demo',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorSchemeSeed: Colors.deepPurple,
-        useMaterial3: true,
-      ),
-      home: BlocProvider(
-        create: (_) => CounterBloc(),
-        child: const CounterPage(),
+    return DevToolsStoreProvider(
+      store: DevToolsStore.instance,
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => CounterBloc()),
+          BlocProvider(create: (_) => ThemeCubit()),
+        ],
+        child: BlocBuilder<ThemeCubit, ThemeState>(
+          builder: (context, themeState) {
+            return MaterialApp(
+              title: 'BLoC DevTools Demo',
+              debugShowCheckedModeBanner: false,
+              theme: ThemeData(
+                colorSchemeSeed: Colors.deepPurple,
+                brightness:
+                themeState.isDark ? Brightness.dark : Brightness.light,
+                useMaterial3: true,
+              ),
+              home: const CounterPage(),
+            );
+          },
+        ),
       ),
     );
   }
 }
-
-// ─── Counter page ───────────────────────────────────────────────────────────
 
 class CounterPage extends StatelessWidget {
   const CounterPage({super.key});
@@ -52,6 +51,16 @@ class CounterPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Counter'),
         actions: [
+          // Theme toggle — exercises the ThemeCubit so the graph shows
+          // two live BLoCs and the timeline captures Cubit changes.
+          IconButton(
+            icon: BlocBuilder<ThemeCubit, ThemeState>(
+              builder: (context, state) => Icon(
+                  state.isDark ? Icons.light_mode : Icons.dark_mode),
+            ),
+            tooltip: 'Toggle theme',
+            onPressed: () => context.read<ThemeCubit>().toggleTheme(),
+          ),
           // Open the DevTools drawer.
           Builder(
             builder: (ctx) => IconButton(
@@ -63,15 +72,16 @@ class CounterPage extends StatelessWidget {
         ],
       ),
 
-      // ── DevTools live in the end drawer ──────────────────────────────
+      // DevTools panel in the end drawer.
       endDrawer: Drawer(
-        width: 340,
+        width: 360,
         child: SafeArea(
-          child: BlocDevToolsPanel(store: devToolsStore),
+          child: BlocDevToolsPanel(
+            store: DevToolsStore.instance,
+          ),
         ),
       ),
 
-      // ── Counter display ──────────────────────────────────────────────
       body: Center(
         child: BlocBuilder<CounterBloc, CounterState>(
           builder: (context, state) {

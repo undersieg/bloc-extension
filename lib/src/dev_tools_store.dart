@@ -1,77 +1,139 @@
 import 'package:flutter/foundation.dart';
 
+import 'bloc_lifecycle.dart';
 import 'dev_tools_entry.dart';
 
-/// Centralized store that holds the entire history of BLoC state transitions
-/// and supports time-travel operations (jump, skip, reset).
+/// Centralized store for the BLoC dev tools extension.
 ///
-/// Inspired by Redux DevTools' `DevToolsStore`, this class maintains:
-/// - A chronological list of [DevToolsEntry] records.
-/// - A `currentIndex` pointer for time travel.
-/// - Streams that notify the UI of changes.
-///
-/// The store does NOT directly mutate BLoC state. Instead, it exposes
-/// the [currentEntry] that the UI widget reads to display which state
-/// is "active" in the dev tools panel.
+/// Holds state history, BLoC lifecycle records, detected relationships,
+/// and performance metrics. Notifies listeners (the UI) on every change.
 class DevToolsStore extends ChangeNotifier {
   DevToolsStore();
 
-  // ---------------------------------------------------------------------------
-  // History
-  // ---------------------------------------------------------------------------
+  // ── Singleton ─────────────────────────────────────────────────────────────
+
+  static DevToolsStore? _instance;
+
+  /// Lazily-created global instance accessible from anywhere.
+  static DevToolsStore get instance => _instance ??= DevToolsStore();
+
+  /// Replaces the singleton (useful in tests).
+  static set instance(DevToolsStore store) => _instance = store;
+
+  // ── History ───────────────────────────────────────────────────────────────
 
   final List<DevToolsEntry> _entries = [];
 
-  /// Unmodifiable view of every recorded entry.
   List<DevToolsEntry> get entries => List.unmodifiable(_entries);
-
-  /// The number of recorded entries.
   int get length => _entries.length;
 
-  // ---------------------------------------------------------------------------
-  // Current position (time-travel cursor)
-  // ---------------------------------------------------------------------------
+  // ── Time-travel cursor ────────────────────────────────────────────────────
 
   int _currentIndex = -1;
 
-  /// The index of the currently "selected" entry (for time-travel).
-  /// Returns `-1` when there are no entries.
   int get currentIndex => _currentIndex;
 
-  /// The entry at the current cursor position, or `null` if empty.
   DevToolsEntry? get currentEntry =>
       _currentIndex >= 0 && _currentIndex < _entries.length
           ? _entries[_currentIndex]
           : null;
 
-  // ---------------------------------------------------------------------------
-  // Recording
-  // ---------------------------------------------------------------------------
+  // ── BLoC lifecycle tracking ───────────────────────────────────────────────
 
-  /// Adds a new entry to the history and advances the cursor.
-  ///
-  /// If the cursor was rewound (via [jumpTo]), adding a new entry does NOT
-  /// discard future entries — it appends to the full history. This preserves
-  /// the complete audit trail, which is the primary purpose of the tool.
+  final Map<int, BlocLifecycleRecord> _lifecycles = {};
+
+  /// All lifecycle records (active + closed).
+  List<BlocLifecycleRecord> get lifecycles => _lifecycles.values.toList();
+
+  /// Only the currently alive BLoC/Cubit instances.
+  List<BlocLifecycleRecord> get aliveBlocs =>
+      _lifecycles.values.where((r) => r.isAlive).toList();
+
+  /// Records a new BLoC/Cubit creation.
+  void recordCreate({
+    required String blocType,
+    required int instanceId,
+    required bool isBloc,
+  }) {
+    _lifecycles[instanceId] = BlocLifecycleRecord(
+      blocType: blocType,
+      instanceId: instanceId,
+      createdAt: DateTime.now(),
+      isBloc: isBloc,
+    );
+    notifyListeners();
+  }
+
+  /// Records a BLoC/Cubit closing.
+  void recordClose(int instanceId) {
+    _lifecycles[instanceId]?.closedAt = DateTime.now();
+    notifyListeners();
+  }
+
+  /// Increments the transition counter and accumulates processing time
+  /// for the given instance.
+  void recordTransitionMetrics(int instanceId, Duration? processingTime) {
+    final record = _lifecycles[instanceId];
+    if (record == null) return;
+    record.transitionCount++;
+    if (processingTime != null) {
+      record.totalProcessingTime += processingTime;
+    }
+  }
+
+  // ── Relationship detection ────────────────────────────────────────────────
+
+  /// Window (in ms) within which two BLoC transitions are considered correlated.
+  static const int correlationWindowMs = 100;
+
+  final Map<String, BlocRelationship> _relationships = {};
+
+  /// All detected relationships.
+  List<BlocRelationship> get relationships => _relationships.values.toList();
+
+  /// Attempts to correlate a new entry with recent entries from other BLoCs.
+  void _detectRelationships(DevToolsEntry newEntry) {
+    // Look backwards through recent entries for events from *other* BLoCs
+    // that happened within the correlation window.
+    for (int i = _entries.length - 1; i >= 0; i--) {
+      final other = _entries[i];
+      final gap =
+          newEntry.timestamp.difference(other.timestamp).inMilliseconds;
+      if (gap > correlationWindowMs) break; // Too old
+      if (gap < 0) continue; // Shouldn't happen
+      if (other.blocType == newEntry.blocType) continue; // Same BLoC
+
+      // Source = the older entry, target = the newer entry.
+      final key = '${other.blocType}→${newEntry.blocType}';
+      _relationships.putIfAbsent(
+        key,
+            () => BlocRelationship(
+          sourceBlocType: other.blocType,
+          targetBlocType: newEntry.blocType,
+        ),
+      );
+      _relationships[key]!.correlationCount++;
+    }
+  }
+
+  // ── Recording ─────────────────────────────────────────────────────────────
+
+  /// Adds a new entry, detects relationships, and advances the cursor.
   void addEntry(DevToolsEntry entry) {
+    _detectRelationships(entry);
     _entries.add(entry);
     _currentIndex = _entries.length - 1;
     notifyListeners();
   }
 
-  // ---------------------------------------------------------------------------
-  // Time-travel actions (modeled after Redux DevTools actions)
-  // ---------------------------------------------------------------------------
+  // ── Time-travel actions ───────────────────────────────────────────────────
 
-  /// Jump to a specific index in the history.
   void jumpTo(int index) {
     if (index < 0 || index >= _entries.length) return;
     _currentIndex = index;
     notifyListeners();
   }
 
-  /// Toggle the "skipped" flag on an entry.
-  /// Skipped entries are excluded from the slider playback.
   void toggleSkip(int index) {
     if (index < 0 || index >= _entries.length) return;
     _entries[index] = _entries[index].copyWith(
@@ -80,24 +142,19 @@ class DevToolsStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Resets the store — clears all recorded history.
   void reset() {
     _entries.clear();
     _currentIndex = -1;
+    _lifecycles.clear();
+    _relationships.clear();
     notifyListeners();
   }
 
-  // ---------------------------------------------------------------------------
-  // Slider helpers
-  // ---------------------------------------------------------------------------
+  // ── Slider helpers ────────────────────────────────────────────────────────
 
-  /// Returns only the entries that have NOT been skipped.
-  /// Useful for the slider which should skip over "skipped" entries.
   List<DevToolsEntry> get activeEntries =>
       _entries.where((e) => !e.isSkipped).toList();
 
-  /// The index within [activeEntries] that corresponds to [currentIndex].
-  /// Returns -1 if the current entry is skipped or there are no active entries.
   int get activeIndex {
     if (_currentIndex < 0) return -1;
     final current = currentEntry;
@@ -105,7 +162,6 @@ class DevToolsStore extends ChangeNotifier {
     return activeEntries.indexOf(current);
   }
 
-  /// Jumps to the entry at the given index within [activeEntries].
   void jumpToActive(int activeIdx) {
     if (activeIdx < 0 || activeIdx >= activeEntries.length) return;
     final target = activeEntries[activeIdx];
@@ -113,14 +169,36 @@ class DevToolsStore extends ChangeNotifier {
     if (realIndex >= 0) jumpTo(realIndex);
   }
 
-  // ---------------------------------------------------------------------------
-  // Filter helpers
-  // ---------------------------------------------------------------------------
+  // ── Filter helpers ────────────────────────────────────────────────────────
 
-  /// Returns the set of distinct BLoC type names that appear in the history.
   Set<String> get blocTypes => _entries.map((e) => e.blocType).toSet();
 
-  /// Returns entries filtered to a specific BLoC type.
   List<DevToolsEntry> entriesForBloc(String blocType) =>
       _entries.where((e) => e.blocType == blocType).toList();
+
+  // ── Performance helpers ───────────────────────────────────────────────────
+
+  /// Returns entries that have processingDuration data, for performance charts.
+  List<DevToolsEntry> get entriesWithTiming =>
+      _entries.where((e) => e.processingDuration != null).toList();
+
+  /// Average processing time across all measured transitions.
+  Duration get avgProcessingTime {
+    final timed = entriesWithTiming;
+    if (timed.isEmpty) return Duration.zero;
+    final totalUs = timed.fold<int>(
+        0, (sum, e) => sum + e.processingDuration!.inMicroseconds);
+    return Duration(microseconds: totalUs ~/ timed.length);
+  }
+
+  /// Slowest recorded transition.
+  DevToolsEntry? get slowestTransition {
+    final timed = entriesWithTiming;
+    if (timed.isEmpty) return null;
+    return timed.reduce((a, b) =>
+    a.processingDuration!.inMicroseconds >=
+        b.processingDuration!.inMicroseconds
+        ? a
+        : b);
+  }
 }
