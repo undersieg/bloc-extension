@@ -122,6 +122,9 @@ class BlocDevToolsObserver extends BlocObserver {
     final previousState = _latestStates[id];
     _latestStates[id] = change.nextState;
 
+    // Record metrics for Cubits too (no timing data, but count matters).
+    store.recordTransitionMetrics(id, null);
+
     store.addEntry(DevToolsEntry(
       blocType: bloc.runtimeType.toString(),
       state: change.nextState,

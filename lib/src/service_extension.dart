@@ -60,10 +60,17 @@ void registerBlocDevToolsServiceExtension(DevToolsStore store) {
         final timed = store.entriesWithTiming;
         final slowest = store.slowestTransition;
 
+        // Top 10 slowest transitions.
+        final sortedTimed = List.of(timed)
+          ..sort((a, b) => b.processingDuration!.inMicroseconds
+              .compareTo(a.processingDuration!.inMicroseconds));
+        final top10 = sortedTimed.take(10).toList();
+
         return ServiceExtensionResponse.result(json.encode({
           'avgProcessingUs': store.avgProcessingTime.inMicroseconds,
           'measuredCount': timed.length,
           'slowest': slowest != null ? _serializeEntry(slowest) : null,
+          'slowestList': top10.map(_serializeEntry).toList(),
           'perBloc': store.lifecycles
               .where((r) => r.transitionCount > 0)
               .map((r) => {
