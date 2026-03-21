@@ -3,8 +3,8 @@ import 'package:bloc/bloc.dart';
 import 'dev_tools_entry.dart';
 import 'dev_tools_store.dart';
 
-/// A [BlocObserver] that records transitions, lifecycle events, and
-/// performance timing into a [DevToolsStore].
+/// A [BlocObserver] that records transitions, lifecycle events,
+/// performance timing, and keeps live BLoC references for state replay.
 class BlocDevToolsObserver extends BlocObserver {
   BlocDevToolsObserver(
       this.store, {
@@ -14,14 +14,13 @@ class BlocDevToolsObserver extends BlocObserver {
   final DevToolsStore store;
   final BlocObserver? innerObserver;
 
-  /// Tracks Bloc instances (not Cubits) to avoid double-recording in onChange.
+  /// Tracks Bloc (not Cubit) instances to avoid double-recording in onChange.
   final Set<int> _blocInstances = {};
 
-  /// Maps instanceId → latest state, so we can capture previousState.
+  /// Maps instanceId → latest state for previousState capture.
   final Map<int, Object?> _latestStates = {};
 
-  /// Maps instanceId → timestamp of the most recent onEvent call,
-  /// used to measure event-to-transition processing time.
+  /// Maps instanceId → most recent onEvent timestamp for processing time.
   final Map<int, DateTime> _eventTimestamps = {};
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -34,14 +33,15 @@ class BlocDevToolsObserver extends BlocObserver {
     final isBloc = bloc is Bloc;
     if (isBloc) _blocInstances.add(id);
 
-    // Track lifecycle.
+    // Register the live reference so the store can push state back.
+    store.registerBlocInstance(id, bloc);
+
     store.recordCreate(
       blocType: bloc.runtimeType.toString(),
       instanceId: id,
       isBloc: isBloc,
     );
 
-    // Capture initial state.
     _latestStates[id] = bloc.state;
     store.addEntry(DevToolsEntry(
       blocType: bloc.runtimeType.toString(),
@@ -59,6 +59,7 @@ class BlocDevToolsObserver extends BlocObserver {
     _blocInstances.remove(id);
     _latestStates.remove(id);
     _eventTimestamps.remove(id);
+    store.unregisterBlocInstance(id);
     store.recordClose(id);
     innerObserver?.onClose(bloc);
   }
@@ -68,8 +69,6 @@ class BlocDevToolsObserver extends BlocObserver {
   @override
   void onEvent(Bloc<dynamic, dynamic> bloc, Object? event) {
     super.onEvent(bloc, event);
-    // Record the moment the event was dispatched — we'll compute the
-    // delta when onTransition fires.
     _eventTimestamps[bloc.hashCode] = DateTime.now();
     innerObserver?.onEvent(bloc, event);
   }
@@ -84,7 +83,6 @@ class BlocDevToolsObserver extends BlocObserver {
     final id = bloc.hashCode;
     final now = DateTime.now();
 
-    // Compute processing duration.
     Duration? processing;
     final eventTime = _eventTimestamps.remove(id);
     if (eventTime != null) {
@@ -94,7 +92,6 @@ class BlocDevToolsObserver extends BlocObserver {
     final previousState = _latestStates[id];
     _latestStates[id] = transition.nextState;
 
-    // Record metrics on the lifecycle record.
     store.recordTransitionMetrics(id, processing);
 
     store.addEntry(DevToolsEntry(
@@ -117,7 +114,6 @@ class BlocDevToolsObserver extends BlocObserver {
 
     final id = bloc.hashCode;
 
-    // Blocs already report via onTransition — skip.
     if (_blocInstances.contains(id)) {
       innerObserver?.onChange(bloc, change);
       return;

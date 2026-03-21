@@ -1,3 +1,4 @@
+import 'package:bloc/bloc.dart' show BlocBase;
 import 'package:flutter/foundation.dart';
 
 import 'bloc_lifecycle.dart';
@@ -6,18 +7,14 @@ import 'dev_tools_entry.dart';
 /// Centralized store for the BLoC dev tools extension.
 ///
 /// Holds state history, BLoC lifecycle records, detected relationships,
-/// and performance metrics. Notifies listeners (the UI) on every change.
+/// performance metrics, and live BLoC references for state replay.
 class DevToolsStore extends ChangeNotifier {
   DevToolsStore();
 
   // ── Singleton ─────────────────────────────────────────────────────────────
 
   static DevToolsStore? _instance;
-
-  /// Lazily-created global instance accessible from anywhere.
   static DevToolsStore get instance => _instance ??= DevToolsStore();
-
-  /// Replaces the singleton (useful in tests).
   static set instance(DevToolsStore store) => _instance = store;
 
   // ── History ───────────────────────────────────────────────────────────────
@@ -38,18 +35,57 @@ class DevToolsStore extends ChangeNotifier {
           ? _entries[_currentIndex]
           : null;
 
+  // ── Live BLoC instance registry (for state replay) ────────────────────────
+
+  final Map<int, BlocBase<dynamic>> _liveInstances = {};
+
+  /// Registers a live BlocBase so we can push state back to it.
+  void registerBlocInstance(int instanceId, BlocBase<dynamic> bloc) {
+    _liveInstances[instanceId] = bloc;
+  }
+
+  /// Removes a BlocBase reference when it closes.
+  void unregisterBlocInstance(int instanceId) {
+    _liveInstances.remove(instanceId);
+  }
+
+  /// Returns the live BlocBase for a given bloc type name, or null.
+  BlocBase<dynamic>? _findLiveBloc(String blocType) {
+    for (final bloc in _liveInstances.values) {
+      if (bloc.runtimeType.toString() == blocType) return bloc;
+    }
+    return null;
+  }
+
+  /// Attempts to push a historical state onto a live BLoC/Cubit.
+  ///
+  /// Returns `true` if the state was successfully applied.
+  /// This uses the `Emittable` interface — works for both Bloc and Cubit.
+  bool replayState(DevToolsEntry entry) {
+    final bloc = _findLiveBloc(entry.blocType);
+    if (bloc == null || entry.state == null) return false;
+    try {
+      // BlocBase extends Emittable, which has emit().
+      // In debug/dev mode this is accessible.
+      (bloc as dynamic).emit(entry.state);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Whether a live instance exists for the given bloc type.
+  bool canReplay(String blocType) => _findLiveBloc(blocType) != null;
+
   // ── BLoC lifecycle tracking ───────────────────────────────────────────────
 
   final Map<int, BlocLifecycleRecord> _lifecycles = {};
 
-  /// All lifecycle records (active + closed).
   List<BlocLifecycleRecord> get lifecycles => _lifecycles.values.toList();
 
-  /// Only the currently alive BLoC/Cubit instances.
   List<BlocLifecycleRecord> get aliveBlocs =>
       _lifecycles.values.where((r) => r.isAlive).toList();
 
-  /// Records a new BLoC/Cubit creation.
   void recordCreate({
     required String blocType,
     required int instanceId,
@@ -64,14 +100,11 @@ class DevToolsStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Records a BLoC/Cubit closing.
   void recordClose(int instanceId) {
     _lifecycles[instanceId]?.closedAt = DateTime.now();
     notifyListeners();
   }
 
-  /// Increments the transition counter and accumulates processing time
-  /// for the given instance.
   void recordTransitionMetrics(int instanceId, Duration? processingTime) {
     final record = _lifecycles[instanceId];
     if (record == null) return;
@@ -83,27 +116,21 @@ class DevToolsStore extends ChangeNotifier {
 
   // ── Relationship detection ────────────────────────────────────────────────
 
-  /// Window (in ms) within which two BLoC transitions are considered correlated.
   static const int correlationWindowMs = 100;
 
   final Map<String, BlocRelationship> _relationships = {};
 
-  /// All detected relationships.
   List<BlocRelationship> get relationships => _relationships.values.toList();
 
-  /// Attempts to correlate a new entry with recent entries from other BLoCs.
   void _detectRelationships(DevToolsEntry newEntry) {
-    // Look backwards through recent entries for events from *other* BLoCs
-    // that happened within the correlation window.
     for (int i = _entries.length - 1; i >= 0; i--) {
       final other = _entries[i];
       final gap =
           newEntry.timestamp.difference(other.timestamp).inMilliseconds;
-      if (gap > correlationWindowMs) break; // Too old
-      if (gap < 0) continue; // Shouldn't happen
-      if (other.blocType == newEntry.blocType) continue; // Same BLoC
+      if (gap > correlationWindowMs) break;
+      if (gap < 0) continue;
+      if (other.blocType == newEntry.blocType) continue;
 
-      // Source = the older entry, target = the newer entry.
       final key = '${other.blocType}→${newEntry.blocType}';
       _relationships.putIfAbsent(
         key,
@@ -118,7 +145,6 @@ class DevToolsStore extends ChangeNotifier {
 
   // ── Recording ─────────────────────────────────────────────────────────────
 
-  /// Adds a new entry, detects relationships, and advances the cursor.
   void addEntry(DevToolsEntry entry) {
     _detectRelationships(entry);
     _entries.add(entry);
@@ -147,6 +173,7 @@ class DevToolsStore extends ChangeNotifier {
     _currentIndex = -1;
     _lifecycles.clear();
     _relationships.clear();
+    // Don't clear _liveInstances — those blocs are still alive.
     notifyListeners();
   }
 
@@ -178,11 +205,9 @@ class DevToolsStore extends ChangeNotifier {
 
   // ── Performance helpers ───────────────────────────────────────────────────
 
-  /// Returns entries that have processingDuration data, for performance charts.
   List<DevToolsEntry> get entriesWithTiming =>
       _entries.where((e) => e.processingDuration != null).toList();
 
-  /// Average processing time across all measured transitions.
   Duration get avgProcessingTime {
     final timed = entriesWithTiming;
     if (timed.isEmpty) return Duration.zero;
@@ -191,7 +216,6 @@ class DevToolsStore extends ChangeNotifier {
     return Duration(microseconds: totalUs ~/ timed.length);
   }
 
-  /// Slowest recorded transition.
   DevToolsEntry? get slowestTransition {
     final timed = entriesWithTiming;
     if (timed.isEmpty) return null;

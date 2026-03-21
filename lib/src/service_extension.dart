@@ -39,47 +39,81 @@ void registerBlocDevToolsServiceExtension(DevToolsStore store) {
   registerExtension('ext.bloc_devtools.getGraph', (method, params) async {
     return ServiceExtensionResponse.result(json.encode({
       'aliveBlocs': store.aliveBlocs.map((r) => {
-            'blocType': r.blocType,
-            'instanceId': r.instanceId,
-            'isBloc': r.isBloc,
-            'transitionCount': r.transitionCount,
-            'createdAt': r.createdAt.toIso8601String(),
-            'avgProcessingUs': r.avgProcessingTime.inMicroseconds,
-          }).toList(),
+        'blocType': r.blocType,
+        'instanceId': r.instanceId,
+        'isBloc': r.isBloc,
+        'transitionCount': r.transitionCount,
+        'createdAt': r.createdAt.toIso8601String(),
+        'avgProcessingUs': r.avgProcessingTime.inMicroseconds,
+      }).toList(),
       'relationships': store.relationships.map((r) => {
-            'source': r.sourceBlocType,
-            'target': r.targetBlocType,
-            'correlationCount': r.correlationCount,
-            'strength': r.strength,
-          }).toList(),
+        'source': r.sourceBlocType,
+        'target': r.targetBlocType,
+        'correlationCount': r.correlationCount,
+        'strength': r.strength,
+      }).toList(),
     }));
   });
 
   registerExtension('ext.bloc_devtools.getPerformance',
-      (method, params) async {
-    final timed = store.entriesWithTiming;
-    final slowest = store.slowestTransition;
+          (method, params) async {
+        final timed = store.entriesWithTiming;
+        final slowest = store.slowestTransition;
 
-    return ServiceExtensionResponse.result(json.encode({
-      'avgProcessingUs': store.avgProcessingTime.inMicroseconds,
-      'measuredCount': timed.length,
-      'slowest': slowest != null ? _serializeEntry(slowest) : null,
-      'perBloc': store.lifecycles
-          .where((r) => r.transitionCount > 0)
-          .map((r) => {
-                'blocType': r.blocType,
-                'isBloc': r.isBloc,
-                'transitionCount': r.transitionCount,
-                'avgProcessingUs': r.avgProcessingTime.inMicroseconds,
-                'totalProcessingUs':
-                    r.totalProcessingTime.inMicroseconds,
-              })
-          .toList(),
-    }));
-  });
+        return ServiceExtensionResponse.result(json.encode({
+          'avgProcessingUs': store.avgProcessingTime.inMicroseconds,
+          'measuredCount': timed.length,
+          'slowest': slowest != null ? _serializeEntry(slowest) : null,
+          'perBloc': store.lifecycles
+              .where((r) => r.transitionCount > 0)
+              .map((r) => {
+            'blocType': r.blocType,
+            'isBloc': r.isBloc,
+            'transitionCount': r.transitionCount,
+            'avgProcessingUs': r.avgProcessingTime.inMicroseconds,
+            'totalProcessingUs':
+            r.totalProcessingTime.inMicroseconds,
+          })
+              .toList(),
+        }));
+      });
 
   // Post an event so DevTools knows the extension is ready.
   postEvent('bloc_devtools.ready', {'version': '0.1.0'});
+
+  // ── Action endpoints (called by DevTools to mutate state) ─────────────
+
+  registerExtension('ext.bloc_devtools.jumpTo', (method, params) async {
+    final index = int.tryParse(params['index'] ?? '') ?? -1;
+    store.jumpTo(index);
+    return ServiceExtensionResponse.result(
+        json.encode({'ok': true, 'currentIndex': store.currentIndex}));
+  });
+
+  registerExtension('ext.bloc_devtools.toggleSkip', (method, params) async {
+    final index = int.tryParse(params['index'] ?? '') ?? -1;
+    store.toggleSkip(index);
+    final entry = index >= 0 && index < store.entries.length
+        ? store.entries[index]
+        : null;
+    return ServiceExtensionResponse.result(json.encode({
+      'ok': true,
+      'index': index,
+      'isSkipped': entry?.isSkipped ?? false,
+    }));
+  });
+
+  registerExtension('ext.bloc_devtools.replay', (method, params) async {
+    final index = int.tryParse(params['index'] ?? '') ?? -1;
+    if (index < 0 || index >= store.entries.length) {
+      return ServiceExtensionResponse.result(
+          json.encode({'ok': false, 'error': 'Invalid index'}));
+    }
+    final entry = store.entries[index];
+    final success = store.replayState(entry);
+    return ServiceExtensionResponse.result(
+        json.encode({'ok': success, 'blocType': entry.blocType}));
+  });
 }
 
 Map<String, dynamic> _serializeStore(DevToolsStore store) {
@@ -87,6 +121,8 @@ Map<String, dynamic> _serializeStore(DevToolsStore store) {
     'entryCount': store.length,
     'currentIndex': store.currentIndex,
     'blocTypes': store.blocTypes.toList(),
+    'aliveBlocTypes':
+    store.aliveBlocs.map((r) => r.blocType).toSet().toList(),
     'aliveBlocCount': store.aliveBlocs.length,
     'relationshipCount': store.relationships.length,
     'measuredTransitions': store.entriesWithTiming.length,

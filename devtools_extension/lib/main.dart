@@ -46,7 +46,6 @@ class _ExtensionBodyState extends State<_ExtensionBody> {
   void initState() {
     super.initState();
     _fetchAll();
-    // Poll every 500ms for new data.
     _pollTimer = Timer.periodic(
         const Duration(milliseconds: 500), (_) => _fetchIncremental());
   }
@@ -56,6 +55,37 @@ class _ExtensionBodyState extends State<_ExtensionBody> {
     _pollTimer?.cancel();
     super.dispose();
   }
+
+  // ── Action callbacks (sent to running app via VM service) ─────────────
+
+  Future<void> _callJumpTo(int index) async {
+    try {
+      await serviceManager.callServiceExtensionOnMainIsolate(
+        'ext.bloc_devtools.jumpTo',
+        args: {'index': '$index'},
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _callToggleSkip(int index) async {
+    try {
+      await serviceManager.callServiceExtensionOnMainIsolate(
+        'ext.bloc_devtools.toggleSkip',
+        args: {'index': '$index'},
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _callReplay(int index) async {
+    try {
+      await serviceManager.callServiceExtensionOnMainIsolate(
+        'ext.bloc_devtools.replay',
+        args: {'index': '$index'},
+      );
+    } catch (_) {}
+  }
+
+  // ── Data fetching ─────────────────────────────────────────────────────
 
   Future<void> _fetchAll() async {
     setState(() {
@@ -210,7 +240,13 @@ class _ExtensionBodyState extends State<_ExtensionBody> {
           Expanded(
             child: TabBarView(
               children: [
-                EntriesPanel(entries: _entries, summary: _summary),
+                EntriesPanel(
+                  entries: _entries,
+                  summary: _summary,
+                  onJumpTo: _callJumpTo,
+                  onToggleSkip: _callToggleSkip,
+                  onReplay: _callReplay,
+                ),
                 GraphPanel(data: _graphData),
                 PerformancePanel(data: _perfData),
               ],
