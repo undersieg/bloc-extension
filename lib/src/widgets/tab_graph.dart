@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../bloc_lifecycle.dart';
 import '../dev_tools_store.dart';
 
-/// Graph tab with draggable BLoC/Cubit nodes and relationship edges.
+/// Graph tab with searchable, filterable, draggable BLoC/Cubit nodes.
 class GraphTab extends StatefulWidget {
   const GraphTab({super.key, required this.store});
   final DevToolsStore store;
@@ -14,13 +14,16 @@ class GraphTab extends StatefulWidget {
   State<GraphTab> createState() => _GraphTabState();
 }
 
-class _GraphTabState extends State<GraphTab> {
-  /// User-positioned offsets keyed by blocType.
-  /// Null means "use default circle layout position".
+class _GraphTabState extends State<GraphTab>
+    with AutomaticKeepAliveClientMixin {
   final Map<String, Offset> _positions = {};
+  final TextEditingController _search = TextEditingController();
+  bool _showBlocs = true;
+  bool _showCubits = true;
+  int? _draggingId; // hashCode of the node being dragged
 
-  /// Tracks the canvas size for initial layout.
-  Size _canvasSize = Size.zero;
+  @override
+  bool get wantKeepAlive => true;
 
   DevToolsStore get _s => widget.store;
 
@@ -28,6 +31,7 @@ class _GraphTabState extends State<GraphTab> {
   void initState() {
     super.initState();
     _s.addListener(_rebuild);
+    _search.addListener(_rebuild);
   }
 
   @override
@@ -42,6 +46,7 @@ class _GraphTabState extends State<GraphTab> {
   @override
   void dispose() {
     _s.removeListener(_rebuild);
+    _search.dispose();
     super.dispose();
   }
 
@@ -49,19 +54,25 @@ class _GraphTabState extends State<GraphTab> {
     if (mounted) setState(() {});
   }
 
-  /// Ensures every alive bloc has a position. New blocs get circle layout.
+  List<BlocLifecycleRecord> get _allAlive => _s.aliveBlocs;
+
+  List<BlocLifecycleRecord> get _filtered {
+    var list = _allAlive.toList();
+    if (!_showBlocs) list = list.where((r) => !r.isBloc).toList();
+    if (!_showCubits) list = list.where((r) => r.isBloc).toList();
+    final q = _search.text.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      list = list
+          .where((r) => r.blocType.toLowerCase().contains(q))
+          .toList();
+    }
+    return list;
+  }
+
   void _ensurePositions(List<BlocLifecycleRecord> alive, Size size) {
     if (size == Size.zero) return;
-    _canvasSize = size;
-
-    // Remove positions for blocs that are no longer alive.
     _positions.removeWhere(
             (key, _) => !alive.any((r) => r.blocType == key));
-
-    // Assign default positions for new blocs.
-    final unpositioned =
-    alive.where((r) => !_positions.containsKey(r.blocType)).toList();
-    if (unpositioned.isEmpty) return;
 
     final cx = size.width / 2;
     final cy = size.height / 2;
@@ -75,65 +86,138 @@ class _GraphTabState extends State<GraphTab> {
         _positions[type] = Offset(cx, cy);
       } else {
         final angle = (2 * math.pi * i / total) - math.pi / 2;
-        _positions[type] =
-            Offset(cx + radius * math.cos(angle), cy + radius * math.sin(angle));
+        _positions[type] = Offset(
+            cx + radius * math.cos(angle), cy + radius * math.sin(angle));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final alive = _s.aliveBlocs;
+    super.build(context);
+    final alive = _filtered;
     final rels = _s.relationships;
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    if (alive.isEmpty) {
-      return Center(
-        child: Text('No active BLoCs/Cubits.',
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(color: cs.onSurfaceVariant)),
-      );
-    }
-
     return Column(
       children: [
-        // Legend + reset
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
+        // ── Search + filters ────────────────────────────────────────────
+        Container(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: cs.outlineVariant)),
+          ),
+          child: Column(
             children: [
-              _LegendDot(color: cs.primary, label: 'Bloc'),
-              const SizedBox(width: 16),
-              _LegendDot(color: cs.tertiary, label: 'Cubit'),
-              const Spacer(),
-              Text('${alive.length} active',
-                  style: theme.textTheme.labelSmall
-                      ?.copyWith(color: cs.onSurfaceVariant)),
-              const SizedBox(width: 4),
-              IconButton(
-                icon: const Icon(Icons.auto_fix_high, size: 16),
-                tooltip: 'Reset positions',
-                onPressed: () => setState(() => _positions.clear()),
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.all(4),
-                constraints:
-                const BoxConstraints(minWidth: 28, minHeight: 28),
+              // Search bar
+              SizedBox(
+                height: 34,
+                child: TextField(
+                  controller: _search,
+                  style: const TextStyle(fontSize: 12),
+                  decoration: InputDecoration(
+                    hintText: 'Search by name...',
+                    hintStyle:
+                    TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                    prefixIcon: Icon(Icons.search, size: 16,
+                        color: cs.onSurfaceVariant),
+                    suffixIcon: _search.text.isNotEmpty
+                        ? IconButton(
+                      icon: Icon(Icons.clear, size: 14,
+                          color: cs.onSurfaceVariant),
+                      onPressed: () => _search.clear(),
+                      padding: EdgeInsets.zero,
+                    )
+                        : null,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 6),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: cs.outlineVariant),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: cs.outlineVariant),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              // Type toggles + legend
+              Row(
+                children: [
+                  _ToggleChip(
+                    label: 'Bloc',
+                    color: cs.primary,
+                    active: _showBlocs,
+                    onTap: () => setState(() => _showBlocs = !_showBlocs),
+                  ),
+                  const SizedBox(width: 6),
+                  _ToggleChip(
+                    label: 'Cubit',
+                    color: cs.tertiary,
+                    active: _showCubits,
+                    onTap: () => setState(() => _showCubits = !_showCubits),
+                  ),
+                  const Spacer(),
+                  Text('${alive.length}/${_allAlive.length} shown',
+                      style: theme.textTheme.labelSmall
+                          ?.copyWith(color: cs.onSurfaceVariant)),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: const Icon(Icons.auto_fix_high, size: 14),
+                    tooltip: 'Reset positions',
+                    onPressed: () => setState(() => _positions.clear()),
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.all(4),
+                    constraints:
+                    const BoxConstraints(minWidth: 28, minHeight: 28),
+                  ),
+                ],
               ),
             ],
           ),
         ),
-        // Canvas
+        // ── Canvas ──────────────────────────────────────────────────────
         Expanded(
-          child: LayoutBuilder(
+          child: alive.isEmpty
+              ? Center(
+            child: Text(
+              _allAlive.isEmpty
+                  ? 'No active BLoCs/Cubits.'
+                  : 'No matches for "${_search.text}"',
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: cs.onSurfaceVariant),
+            ),
+          )
+              : LayoutBuilder(
             builder: (context, constraints) {
-              final size =
-              Size(constraints.maxWidth, constraints.maxHeight);
+              final size = Size(
+                  constraints.maxWidth, constraints.maxHeight);
               _ensurePositions(alive, size);
 
-              return GestureDetector(
-                // Absorb taps on canvas background
-                onTap: () {},
+              return Listener(
+                onPointerMove: (event) {
+                  if (_draggingId == null) return;
+                  final type = alive
+                      .firstWhere(
+                          (r) => r.instanceId == _draggingId,
+                      orElse: () => alive.first)
+                      .blocType;
+                  if (!_positions.containsKey(type)) return;
+                  setState(() {
+                    final old = _positions[type]!;
+                    _positions[type] = Offset(
+                      (old.dx + event.delta.dx)
+                          .clamp(0, size.width),
+                      (old.dy + event.delta.dy)
+                          .clamp(0, size.height),
+                    );
+                  });
+                },
+                onPointerUp: (_) => _draggingId = null,
                 child: CustomPaint(
                   size: size,
                   painter: _EdgePainter(
@@ -146,22 +230,7 @@ class _GraphTabState extends State<GraphTab> {
                     children: [
                       for (final r in alive)
                         if (_positions.containsKey(r.blocType))
-                          _DraggableNode(
-                            record: r,
-                            position: _positions[r.blocType]!,
-                            colorScheme: cs,
-                            onDrag: (delta) {
-                              setState(() {
-                                final old = _positions[r.blocType]!;
-                                _positions[r.blocType] = Offset(
-                                  (old.dx + delta.dx)
-                                      .clamp(0, size.width),
-                                  (old.dy + delta.dy)
-                                      .clamp(0, size.height),
-                                );
-                              });
-                            },
-                          ),
+                          _buildNode(r, cs, size),
                     ],
                   ),
                 ),
@@ -169,9 +238,9 @@ class _GraphTabState extends State<GraphTab> {
             },
           ),
         ),
-        // Detail table
+        // ── Detail table ────────────────────────────────────────────────
         Container(
-          height: 140,
+          height: 120,
           decoration: BoxDecoration(
             color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
             border: Border(top: BorderSide(color: cs.outlineVariant)),
@@ -184,42 +253,22 @@ class _GraphTabState extends State<GraphTab> {
       ],
     );
   }
-}
 
-// ── Draggable node ──────────────────────────────────────────────────────────
-
-class _DraggableNode extends StatelessWidget {
-  const _DraggableNode({
-    required this.record,
-    required this.position,
-    required this.colorScheme,
-    required this.onDrag,
-  });
-
-  final BlocLifecycleRecord record;
-  final Offset position;
-  final ColorScheme colorScheme;
-  final ValueChanged<Offset> onDrag;
-
-  static const double _nodeW = 100;
-  static const double _nodeH = 48;
-
-  @override
-  Widget build(BuildContext context) {
-    final color =
-    record.isBloc ? colorScheme.primary : colorScheme.tertiary;
+  Widget _buildNode(
+      BlocLifecycleRecord r, ColorScheme cs, Size canvasSize) {
+    final pos = _positions[r.blocType]!;
+    final color = r.isBloc ? cs.primary : cs.tertiary;
 
     return Positioned(
-      left: position.dx - _nodeW / 2,
-      top: position.dy - _nodeH / 2,
-      child: GestureDetector(
-        onPanUpdate: (details) => onDrag(details.delta),
+      left: pos.dx - 50,
+      top: pos.dy - 24,
+      child: Listener(
+        onPointerDown: (_) => _draggingId = r.instanceId,
         child: MouseRegion(
           cursor: SystemMouseCursors.grab,
           child: Container(
-            width: _nodeW,
-            padding:
-            const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+            width: 100,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
@@ -229,7 +278,7 @@ class _DraggableNode extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(record.blocType,
+                Text(r.blocType,
                     style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -238,10 +287,9 @@ class _DraggableNode extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center),
                 const SizedBox(height: 2),
-                Text('${record.transitionCount} states',
+                Text('${r.transitionCount} states',
                     style: TextStyle(
-                        fontSize: 8,
-                        color: colorScheme.onSurfaceVariant)),
+                        fontSize: 8, color: cs.onSurfaceVariant)),
               ],
             ),
           ),
@@ -283,9 +331,25 @@ class _EdgePainter extends CustomPainter {
         ..strokeWidth = 1.0 + rel.strength * 2.0;
 
       canvas.drawLine(from, to, paint);
-      _drawArrow(canvas, from, to, paint);
 
-      // Correlation count label
+      final angle = math.atan2(to.dy - from.dy, to.dx - from.dx);
+      final stop = Offset(
+          to.dx - 50 * math.cos(angle), to.dy - 50 * math.sin(angle));
+      final p1 = Offset(stop.dx - 8 * math.cos(angle - 0.5),
+          stop.dy - 8 * math.sin(angle - 0.5));
+      final p2 = Offset(stop.dx - 8 * math.cos(angle + 0.5),
+          stop.dy - 8 * math.sin(angle + 0.5));
+      canvas.drawPath(
+        Path()
+          ..moveTo(stop.dx, stop.dy)
+          ..lineTo(p1.dx, p1.dy)
+          ..lineTo(p2.dx, p2.dy)
+          ..close(),
+        Paint()
+          ..color = paint.color
+          ..style = PaintingStyle.fill,
+      );
+
       final mid = Offset((from.dx + to.dx) / 2, (from.dy + to.dy) / 2);
       final tp = TextPainter(
         text: TextSpan(
@@ -301,33 +365,62 @@ class _EdgePainter extends CustomPainter {
     }
   }
 
-  void _drawArrow(Canvas canvas, Offset from, Offset to, Paint paint) {
-    final angle = math.atan2(to.dy - from.dy, to.dx - from.dx);
-    const len = 8.0;
-    const spread = 0.5;
-    final stop = Offset(
-        to.dx - 50 * math.cos(angle), to.dy - 50 * math.sin(angle));
-    final p1 = Offset(stop.dx - len * math.cos(angle - spread),
-        stop.dy - len * math.sin(angle - spread));
-    final p2 = Offset(stop.dx - len * math.cos(angle + spread),
-        stop.dy - len * math.sin(angle + spread));
-    canvas.drawPath(
-      Path()
-        ..moveTo(stop.dx, stop.dy)
-        ..lineTo(p1.dx, p1.dy)
-        ..lineTo(p2.dx, p2.dy)
-        ..close(),
-      Paint()
-        ..color = paint.color
-        ..style = PaintingStyle.fill,
-    );
-  }
-
   @override
   bool shouldRepaint(_EdgePainter old) => true;
 }
 
-// ── Detail row ──────────────────────────────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+class _ToggleChip extends StatelessWidget {
+  const _ToggleChip({
+    required this.label,
+    required this.color,
+    required this.active,
+    required this.onTap,
+  });
+  final String label;
+  final Color color;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: active ? color.withValues(alpha: 0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: active
+                ? color.withValues(alpha: 0.5)
+                : Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: active ? color : Colors.grey)),
+            const SizedBox(width: 4),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                    color: active
+                        ? color
+                        : Theme.of(context).colorScheme.onSurfaceVariant)),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _DetailRow extends StatelessWidget {
   const _DetailRow({required this.record});
@@ -343,8 +436,7 @@ class _DetailRow extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 8,
-            height: 8,
+            width: 8, height: 8,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: record.isBloc ? cs.primary : cs.tertiary,
@@ -355,41 +447,15 @@ class _DetailRow extends StatelessWidget {
             child: Text(record.blocType,
                 style: const TextStyle(
                     fontSize: 11, fontWeight: FontWeight.w500),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis),
+                maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
-          Text('${record.transitionCount} transitions',
+          Text('${record.transitionCount} trans.',
               style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
           const SizedBox(width: 12),
           Text(avgMs > 0 ? '${avgMs.toStringAsFixed(1)}ms avg' : '–',
               style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
         ],
       ),
-    );
-  }
-}
-
-class _LegendDot extends StatelessWidget {
-  const _LegendDot({required this.color, required this.label});
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-                shape: BoxShape.circle, color: color)),
-        const SizedBox(width: 4),
-        Text(label,
-            style: TextStyle(
-                fontSize: 11,
-                color: Theme.of(context).colorScheme.onSurfaceVariant)),
-      ],
     );
   }
 }
