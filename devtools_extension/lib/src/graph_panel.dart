@@ -347,6 +347,24 @@ class _EdgePainter extends CustomPainter {
           ..color = paint.color
           ..style = PaintingStyle.fill,
       );
+
+      // Correlation count label at midpoint.
+      final count = rel['correlationCount'] as int? ?? 0;
+      if (count > 0) {
+        final mid = Offset((from.dx + to.dx) / 2, (from.dy + to.dy) / 2);
+        final tp = TextPainter(
+          text: TextSpan(
+            text: '$count',
+            style: TextStyle(
+              fontSize: 9,
+              color: Colors.grey.shade400,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        tp.paint(canvas, mid - Offset(tp.width / 2, tp.height / 2));
+      }
     }
   }
 
