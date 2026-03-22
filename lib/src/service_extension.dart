@@ -15,8 +15,6 @@ import 'dev_tools_store.dart';
 /// registerBlocDevToolsServiceExtension(DevToolsStore.instance);
 /// ```
 void registerBlocDevToolsServiceExtension(DevToolsStore store) {
-  // Register the service extension that the DevTools extension will call.
-  // Extension name format: ext.bloc_devtools.<method>
   registerExtension('ext.bloc_devtools.getState', (method, params) async {
     final data = _serializeStore(store);
     return ServiceExtensionResponse.result(json.encode(data));
@@ -60,7 +58,6 @@ void registerBlocDevToolsServiceExtension(DevToolsStore store) {
         final timed = store.entriesWithTiming;
         final slowest = store.slowestTransition;
 
-        // Top 10 slowest transitions.
         final sortedTimed = List.of(timed)
           ..sort((a, b) => b.processingDuration!.inMicroseconds
               .compareTo(a.processingDuration!.inMicroseconds));
@@ -87,8 +84,6 @@ void registerBlocDevToolsServiceExtension(DevToolsStore store) {
 
   // Post an event so DevTools knows the extension is ready.
   postEvent('bloc_devtools.ready', {'version': '0.1.0'});
-
-  // ── Action endpoints (called by DevTools to mutate state) ─────────────
 
   registerExtension('ext.bloc_devtools.jumpTo', (method, params) async {
     final index = int.tryParse(params['index'] ?? '') ?? -1;

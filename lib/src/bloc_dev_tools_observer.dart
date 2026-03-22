@@ -23,8 +23,6 @@ class BlocDevToolsObserver extends BlocObserver {
   /// Maps instanceId → most recent onEvent timestamp for processing time.
   final Map<int, DateTime> _eventTimestamps = {};
 
-  // ── Lifecycle ─────────────────────────────────────────────────────────────
-
   @override
   void onCreate(BlocBase<dynamic> bloc) {
     super.onCreate(bloc);
@@ -33,7 +31,6 @@ class BlocDevToolsObserver extends BlocObserver {
     final isBloc = bloc is Bloc;
     if (isBloc) _blocInstances.add(id);
 
-    // Register the live reference so the store can push state back.
     store.registerBlocInstance(id, bloc);
 
     store.recordCreate(
@@ -64,16 +61,12 @@ class BlocDevToolsObserver extends BlocObserver {
     innerObserver?.onClose(bloc);
   }
 
-  // ── Events (for timing) ───────────────────────────────────────────────────
-
   @override
   void onEvent(Bloc<dynamic, dynamic> bloc, Object? event) {
     super.onEvent(bloc, event);
     _eventTimestamps[bloc.hashCode] = DateTime.now();
     innerObserver?.onEvent(bloc, event);
   }
-
-  // ── Transitions (Bloc) ────────────────────────────────────────────────────
 
   @override
   void onTransition(
@@ -106,8 +99,6 @@ class BlocDevToolsObserver extends BlocObserver {
     innerObserver?.onTransition(bloc, transition);
   }
 
-  // ── Changes (Cubit only) ──────────────────────────────────────────────────
-
   @override
   void onChange(BlocBase<dynamic> bloc, Change<dynamic> change) {
     super.onChange(bloc, change);
@@ -134,8 +125,6 @@ class BlocDevToolsObserver extends BlocObserver {
 
     innerObserver?.onChange(bloc, change);
   }
-
-  // ── Errors ────────────────────────────────────────────────────────────────
 
   @override
   void onError(BlocBase<dynamic> bloc, Object error, StackTrace stackTrace) {

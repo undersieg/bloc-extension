@@ -1,9 +1,5 @@
 import 'package:bloc/bloc.dart';
 
-// ═════════════════════════════════════════════════════════════════════════════
-// 1. CounterBloc — event-driven, demonstrates performance timing
-// ═════════════════════════════════════════════════════════════════════════════
-
 sealed class CounterEvent {}
 
 final class Increment extends CounterEvent {
@@ -51,10 +47,6 @@ class CounterBloc extends Bloc<CounterEvent, CounterState> {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// 2. ThemeCubit — simple Cubit, shows Cubit vs Bloc in graph
-// ═════════════════════════════════════════════════════════════════════════════
-
 class ThemeState {
   const ThemeState({required this.isDark, this.seedColor = 'purple'});
   final bool isDark;
@@ -81,11 +73,6 @@ class ThemeCubit extends Cubit<ThemeState> {
   void setSeedColor(String color) =>
       emit(ThemeState(isDark: state.isDark, seedColor: color));
 }
-
-// ═════════════════════════════════════════════════════════════════════════════
-// 3. HistoryBloc — records counter milestones, CONNECTED to CounterBloc
-//    (demonstrates graph connections via temporal correlation)
-// ═════════════════════════════════════════════════════════════════════════════
 
 sealed class HistoryEvent {}
 
@@ -138,10 +125,6 @@ class HistoryBloc extends Bloc<HistoryEvent, HistoryState> {
     });
   }
 }
-
-// ═════════════════════════════════════════════════════════════════════════════
-// 4. SettingsCubit — multi-field state, great for DIFF demonstration
-// ═════════════════════════════════════════════════════════════════════════════
 
 class SettingsState {
   const SettingsState({

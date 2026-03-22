@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../dev_tools_entry.dart';
 import '../dev_tools_store.dart';
 
-/// The History tab with timeline, slider, filter, inspector, diff, and replay.
+/// History tab: timeline, slider, filter chips, inspector with diff + replay.
 class HistoryTab extends StatefulWidget {
   const HistoryTab({super.key, required this.store});
   final DevToolsStore store;
@@ -56,34 +56,22 @@ class _HistoryTabState extends State<HistoryTab>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // required by AutomaticKeepAliveClientMixin
+    super.build(context);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
     return Column(
       children: [
-        // ── Filter chips (always visible) ───────────────────────────────
         _buildFilterRow(cs),
-
-        // ── Slider ──────────────────────────────────────────────────────
         _buildSlider(cs),
-
-        // ── Timeline list ───────────────────────────────────────────────
         Expanded(child: _buildTimeline(theme, cs)),
-
-        // ── Inspector with diff + replay ────────────────────────────────
         _buildInspector(theme, cs),
       ],
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // Filter row
-  // ═══════════════════════════════════════════════════════════════════════════
-
   Widget _buildFilterRow(ColorScheme cs) {
     final types = _s.blocTypes.toList();
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -120,14 +108,10 @@ class _HistoryTabState extends State<HistoryTab>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // Slider
-  // ═══════════════════════════════════════════════════════════════════════════
-
   Widget _buildSlider(ColorScheme cs) {
-    final active = _s.activeEntries;
-    final idx = _s.activeIndex;
-    final hasActive = active.isNotEmpty;
+    final total = _s.length;
+    final idx = _s.currentIndex;
+    final hasEntries = total > 0;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -138,9 +122,9 @@ class _HistoryTabState extends State<HistoryTab>
       child: Row(
         children: [
           _SmallBtn(Icons.skip_previous, 'First',
-              hasActive ? () => _s.jumpToActive(0) : null),
+              hasEntries ? () => _s.jumpTo(0) : null),
           _SmallBtn(Icons.chevron_left, 'Previous',
-              hasActive && idx > 0 ? () => _s.jumpToActive(idx - 1) : null),
+              hasEntries && idx > 0 ? () => _s.jumpTo(idx - 1) : null),
           Expanded(
             child: SliderTheme(
               data: SliderThemeData(
@@ -154,41 +138,29 @@ class _HistoryTabState extends State<HistoryTab>
                 thumbColor: cs.primary,
               ),
               child: Slider(
-                value: hasActive
-                    ? idx
-                    .toDouble()
-                    .clamp(0, (active.length - 1).toDouble())
+                value: hasEntries
+                    ? idx.toDouble().clamp(0, (total - 1).toDouble())
                     : 0,
                 min: 0,
-                max: hasActive
-                    ? (active.length - 1)
-                    .toDouble()
-                    .clamp(1, double.infinity)
+                max: hasEntries
+                    ? (total - 1).toDouble().clamp(1, double.infinity)
                     : 1,
-                divisions:
-                hasActive && active.length > 1 ? active.length - 1 : null,
-                onChanged: hasActive
-                    ? (v) => _s.jumpToActive(v.round())
-                    : null,
+                divisions: total > 1 ? total - 1 : null,
+                onChanged:
+                hasEntries ? (v) => _s.jumpTo(v.round()) : null,
               ),
             ),
           ),
           _SmallBtn(Icons.chevron_right, 'Next',
-              hasActive && idx < active.length - 1
-                  ? () => _s.jumpToActive(idx + 1)
+              hasEntries && idx < total - 1
+                  ? () => _s.jumpTo(idx + 1)
                   : null),
           _SmallBtn(Icons.skip_next, 'Last',
-              hasActive
-                  ? () => _s.jumpToActive(active.length - 1)
-                  : null),
+              hasEntries ? () => _s.jumpTo(total - 1) : null),
         ],
       ),
     );
   }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // Timeline list
-  // ═══════════════════════════════════════════════════════════════════════════
 
   Widget _buildTimeline(ThemeData theme, ColorScheme cs) {
     final list = _filtered;
@@ -223,19 +195,13 @@ class _HistoryTabState extends State<HistoryTab>
 
         return _TimelineTile(
           entry: entry,
-          index: realIdx,
           isSelected: isSelected,
           gap: gap,
           onJump: () => _s.jumpTo(realIdx),
-          onToggleSkip: () => _s.toggleSkip(realIdx),
         );
       },
     );
   }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // Inspector with diff toggle and replay button
-  // ═══════════════════════════════════════════════════════════════════════════
 
   Widget _buildInspector(ThemeData theme, ColorScheme cs) {
     final entry = _s.currentEntry;
@@ -254,7 +220,6 @@ class _HistoryTabState extends State<HistoryTab>
           : Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Toolbar ─────────────────────────────────────────────
           Padding(
             padding:
             const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -266,7 +231,6 @@ class _HistoryTabState extends State<HistoryTab>
                     style: theme.textTheme.labelMedium
                         ?.copyWith(fontWeight: FontWeight.w600)),
                 const Spacer(),
-                // Diff toggle
                 if (entry.previousState != null)
                   _ToolbarChip(
                     label: 'Diff',
@@ -277,7 +241,6 @@ class _HistoryTabState extends State<HistoryTab>
                   ),
                 if (entry.previousState != null)
                   const SizedBox(width: 4),
-                // JSON toggle (always available)
                 _ToolbarChip(
                   label: 'JSON',
                   icon: Icons.code,
@@ -285,7 +248,6 @@ class _HistoryTabState extends State<HistoryTab>
                   onTap: () => setState(() => _showDiff = false),
                 ),
                 const SizedBox(width: 8),
-                // Replay button
                 if (_s.canReplay(entry.blocType))
                   _ToolbarChip(
                     label: 'Replay',
@@ -309,7 +271,6 @@ class _HistoryTabState extends State<HistoryTab>
               ],
             ),
           ),
-          // ── Content ─────────────────────────────────────────────
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
@@ -324,12 +285,6 @@ class _HistoryTabState extends State<HistoryTab>
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Private sub-widgets
-// ═════════════════════════════════════════════════════════════════════════════
-
-// ── Toolbar chip ────────────────────────────────────────────────────────────
-
 class _ToolbarChip extends StatelessWidget {
   const _ToolbarChip({
     required this.label,
@@ -338,7 +293,6 @@ class _ToolbarChip extends StatelessWidget {
     required this.onTap,
     this.color,
   });
-
   final String label;
   final IconData icon;
   final bool active;
@@ -377,15 +331,12 @@ class _ToolbarChip extends StatelessWidget {
   }
 }
 
-// ── Filter chip ─────────────────────────────────────────────────────────────
-
 class _FilterChip extends StatelessWidget {
   const _FilterChip({
     required this.label,
     required this.selected,
     required this.onTap,
   });
-
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -421,23 +372,17 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-// ── Timeline tile with proper eye icon ──────────────────────────────────────
-
 class _TimelineTile extends StatelessWidget {
   const _TimelineTile({
     required this.entry,
-    required this.index,
     required this.isSelected,
     required this.onJump,
-    required this.onToggleSkip,
     this.gap,
   });
 
   final DevToolsEntry entry;
-  final int index;
   final bool isSelected;
   final VoidCallback onJump;
-  final VoidCallback onToggleSkip;
   final Duration? gap;
 
   @override
@@ -454,7 +399,6 @@ class _TimelineTile extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Gap indicator
         if (gap != null && gap!.inMilliseconds > 200)
           Padding(
             padding: const EdgeInsets.only(left: 26, top: 2, bottom: 2),
@@ -468,108 +412,77 @@ class _TimelineTile extends StatelessWidget {
               ],
             ),
           ),
-        // Entry row
         Material(
           color: isSelected
               ? cs.primaryContainer.withValues(alpha: 0.5)
               : Colors.transparent,
           child: InkWell(
             onTap: onJump,
-            child: Opacity(
-              opacity: entry.isSkipped ? 0.4 : 1.0,
-              child: Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                child: Row(
-                  children: [
-                    // Timeline dot
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isSelected ? cs.primary : Colors.transparent,
-                        border: Border.all(
-                          color: isSelected ? cs.primary : cs.outline,
-                          width: isSelected ? 3 : 1.5,
-                        ),
+            child: Padding(
+              padding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              child: Row(
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isSelected ? cs.primary : Colors.transparent,
+                      border: Border.all(
+                        color: isSelected ? cs.primary : cs.outline,
+                        width: isSelected ? 3 : 1.5,
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    // Info column
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            entry.event?.toString() ?? '(initial state)',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w500,
-                              decoration: entry.isSkipped
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Text('${entry.blocType} · $timeStr',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: cs.onSurfaceVariant,
-                                    fontSize: 10,
-                                  )),
-                              if (entry.processingDuration != null) ...[
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 4, vertical: 1),
-                                  decoration: BoxDecoration(
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          entry.event?.toString() ?? '(initial state)',
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(fontWeight: FontWeight.w500),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Text('${entry.blocType} · $timeStr',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: cs.onSurfaceVariant,
+                                  fontSize: 10,
+                                )),
+                            if (entry.processingDuration != null) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 4, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: _perfColor(
+                                      entry.processingDuration!, cs)
+                                      .withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '${(entry.processingDuration!.inMicroseconds / 1000).toStringAsFixed(1)}ms',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w600,
                                     color: _perfColor(
-                                        entry.processingDuration!, cs)
-                                        .withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    '${(entry.processingDuration!.inMicroseconds / 1000).toStringAsFixed(1)}ms',
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w600,
-                                      color: _perfColor(
-                                          entry.processingDuration!, cs),
-                                    ),
+                                        entry.processingDuration!, cs),
                                   ),
                                 ),
-                              ],
+                              ),
                             ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    // ── Eye icon (skip/unskip) ──────────────────────────
-                    SizedBox(
-                      width: 36,
-                      height: 36,
-                      child: IconButton(
-                        icon: Icon(
-                          entry.isSkipped
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          size: 18,
-                          color: entry.isSkipped
-                              ? cs.error.withValues(alpha: 0.6)
-                              : cs.onSurfaceVariant,
+                          ],
                         ),
-                        tooltip: entry.isSkipped ? 'Unskip' : 'Skip',
-                        onPressed: onToggleSkip,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                            minWidth: 36, minHeight: 36),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -593,8 +506,6 @@ class _TimelineTile extends StatelessWidget {
   }
 }
 
-// ── JSON view ───────────────────────────────────────────────────────────────
-
 class _JsonView extends StatelessWidget {
   const _JsonView({required this.entry});
   final DevToolsEntry entry;
@@ -615,8 +526,6 @@ class _JsonView extends StatelessWidget {
             color: Theme.of(context).colorScheme.onSurface));
   }
 }
-
-// ── Diff view ───────────────────────────────────────────────────────────────
 
 class _DiffView extends StatelessWidget {
   const _DiffView({required this.entry});
@@ -645,7 +554,6 @@ class _DiffView extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Type badge (+, −, ~)
                 Container(
                   width: 18,
                   height: 18,
@@ -667,7 +575,6 @@ class _DiffView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Field name + values
                 Expanded(
                   child: RichText(
                     text: TextSpan(
@@ -724,8 +631,6 @@ class _DiffView extends StatelessWidget {
     }
   }
 }
-
-// ── Small icon button ───────────────────────────────────────────────────────
 
 class _SmallBtn extends StatelessWidget {
   const _SmallBtn(this.icon, this.tooltip, this.onPressed);

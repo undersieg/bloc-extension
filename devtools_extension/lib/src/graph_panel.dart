@@ -88,7 +88,6 @@ class _GraphPanelState extends State<GraphPanel> {
 
     return Column(
       children: [
-        // ── Search + filters ────────────────────────────────────────────
         Container(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
           decoration: BoxDecoration(
@@ -158,7 +157,6 @@ class _GraphPanelState extends State<GraphPanel> {
             ],
           ),
         ),
-        // ── Canvas ──────────────────────────────────────────────────────
         Expanded(
           child: alive.isEmpty
               ? Center(
@@ -211,7 +209,6 @@ class _GraphPanelState extends State<GraphPanel> {
             },
           ),
         ),
-        // ── Detail table ────────────────────────────────────────────────
         Container(
           height: 120,
           decoration: BoxDecoration(
@@ -306,8 +303,6 @@ class _GraphPanelState extends State<GraphPanel> {
   }
 }
 
-// ── Edge painter ────────────────────────────────────────────────────────────
-
 class _EdgePainter extends CustomPainter {
   _EdgePainter({required this.positions, required this.relationships});
 
@@ -348,7 +343,6 @@ class _EdgePainter extends CustomPainter {
           ..style = PaintingStyle.fill,
       );
 
-      // Correlation count label at midpoint.
       final count = rel['correlationCount'] as int? ?? 0;
       if (count > 0) {
         final mid = Offset((from.dx + to.dx) / 2, (from.dy + to.dy) / 2);
@@ -371,8 +365,6 @@ class _EdgePainter extends CustomPainter {
   @override
   bool shouldRepaint(_EdgePainter old) => true;
 }
-
-// ── Toggle chip ─────────────────────────────────────────────────────────────
 
 class _ToggleChip extends StatelessWidget {
   const _ToggleChip(this.label, this.color, this.active, this.onTap);

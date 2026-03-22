@@ -32,7 +32,6 @@ class _ExtensionBody extends StatefulWidget {
 class _ExtensionBodyState extends State<_ExtensionBody> {
   Timer? _pollTimer;
 
-  // Fetched data from the running app.
   Map<String, dynamic>? _summary;
   List<Map<String, dynamic>> _entries = [];
   Map<String, dynamic>? _graphData;
@@ -56,21 +55,10 @@ class _ExtensionBodyState extends State<_ExtensionBody> {
     super.dispose();
   }
 
-  // ── Action callbacks (sent to running app via VM service) ─────────────
-
   Future<void> _callJumpTo(int index) async {
     try {
       await serviceManager.callServiceExtensionOnMainIsolate(
         'ext.bloc_devtools.jumpTo',
-        args: {'index': '$index'},
-      );
-    } catch (_) {}
-  }
-
-  Future<void> _callToggleSkip(int index) async {
-    try {
-      await serviceManager.callServiceExtensionOnMainIsolate(
-        'ext.bloc_devtools.toggleSkip',
         args: {'index': '$index'},
       );
     } catch (_) {}
@@ -84,8 +72,6 @@ class _ExtensionBodyState extends State<_ExtensionBody> {
       );
     } catch (_) {}
   }
-
-  // ── Data fetching ─────────────────────────────────────────────────────
 
   Future<void> _fetchAll() async {
     setState(() {
@@ -148,7 +134,6 @@ class _ExtensionBodyState extends State<_ExtensionBody> {
         _entries.addAll(newEntries);
         _lastFetchedIndex = totalCount;
 
-        // Also refresh graph & perf data when there are new entries.
         final graphResp =
         await serviceManager.callServiceExtensionOnMainIsolate(
           'ext.bloc_devtools.getGraph',
@@ -206,7 +191,6 @@ class _ExtensionBodyState extends State<_ExtensionBody> {
       length: 3,
       child: Column(
         children: [
-          // ── Header ────────────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Row(
@@ -244,7 +228,6 @@ class _ExtensionBodyState extends State<_ExtensionBody> {
                   entries: _entries,
                   summary: _summary,
                   onJumpTo: _callJumpTo,
-                  onToggleSkip: _callToggleSkip,
                   onReplay: _callReplay,
                 ),
                 GraphPanel(data: _graphData),

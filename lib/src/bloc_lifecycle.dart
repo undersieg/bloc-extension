@@ -38,8 +38,8 @@ class BlocLifecycleRecord {
   /// Average processing time per transition.
   Duration get avgProcessingTime => transitionCount > 0
       ? Duration(
-          microseconds:
-              totalProcessingTime.inMicroseconds ~/ transitionCount)
+      microseconds:
+      totalProcessingTime.inMicroseconds ~/ transitionCount)
       : Duration.zero;
 }
 

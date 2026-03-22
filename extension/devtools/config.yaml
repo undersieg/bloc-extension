@@ -1,5 +1,5 @@
 name: bloc_devtools_extension
-issueTracker: https://github.com/example/bloc_devtools_extension/issues
+issueTracker: https://github.com/undersieg/bloc-extension/issues
 version: 0.1.0
 materialIconCodePoint: '0xe868'
 requiresConnection: true

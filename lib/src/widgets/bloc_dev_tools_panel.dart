@@ -56,7 +56,6 @@ class _BlocDevToolsPanelState extends State<BlocDevToolsPanel>
 
     return Column(
       children: [
-        // ── Header ──────────────────────────────────────────────────────
         Container(
           padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
           decoration: BoxDecoration(
@@ -136,10 +135,12 @@ class _BlocDevToolsPanelState extends State<BlocDevToolsPanel>
           ),
         ),
 
-        // ── Tab content ─────────────────────────────────────────────────
         Expanded(
           child: TabBarView(
             controller: _tabController,
+            // Disable swipe-to-switch — prevents conflict with graph node
+            // dragging on mobile. Users tap tab headers to switch instead.
+            physics: const NeverScrollableScrollPhysics(),
             children: [
               HistoryTab(store: widget.store),
               GraphTab(store: widget.store),

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../bloc_lifecycle.dart';
 import '../dev_tools_store.dart';
 
-/// Graph tab with searchable, filterable, draggable BLoC/Cubit nodes.
+/// Graph tab: draggable + selectable BLoC/Cubit nodes, search, type filter.
 class GraphTab extends StatefulWidget {
   const GraphTab({super.key, required this.store});
   final DevToolsStore store;
@@ -20,11 +20,11 @@ class _GraphTabState extends State<GraphTab>
   final TextEditingController _search = TextEditingController();
   bool _showBlocs = true;
   bool _showCubits = true;
-  int? _draggingId; // hashCode of the node being dragged
+  int? _draggingId;
+  String? _selectedType; // currently selected node
 
   @override
   bool get wantKeepAlive => true;
-
   DevToolsStore get _s => widget.store;
 
   @override
@@ -69,16 +69,23 @@ class _GraphTabState extends State<GraphTab>
     return list;
   }
 
+  BlocLifecycleRecord? get _selectedRecord {
+    if (_selectedType == null) return null;
+    try {
+      return _allAlive.firstWhere((r) => r.blocType == _selectedType);
+    } catch (_) {
+      return null;
+    }
+  }
+
   void _ensurePositions(List<BlocLifecycleRecord> alive, Size size) {
     if (size == Size.zero) return;
     _positions.removeWhere(
             (key, _) => !alive.any((r) => r.blocType == key));
-
     final cx = size.width / 2;
     final cy = size.height / 2;
     final radius = math.min(cx, cy) * 0.5;
     final total = alive.length;
-
     for (int i = 0; i < alive.length; i++) {
       final type = alive[i].blocType;
       if (_positions.containsKey(type)) continue;
@@ -96,91 +103,12 @@ class _GraphTabState extends State<GraphTab>
   Widget build(BuildContext context) {
     super.build(context);
     final alive = _filtered;
-    final rels = _s.relationships;
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
     return Column(
       children: [
-        // ── Search + filters ────────────────────────────────────────────
-        Container(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: cs.outlineVariant)),
-          ),
-          child: Column(
-            children: [
-              // Search bar
-              SizedBox(
-                height: 34,
-                child: TextField(
-                  controller: _search,
-                  style: const TextStyle(fontSize: 12),
-                  decoration: InputDecoration(
-                    hintText: 'Search by name...',
-                    hintStyle:
-                    TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                    prefixIcon: Icon(Icons.search, size: 16,
-                        color: cs.onSurfaceVariant),
-                    suffixIcon: _search.text.isNotEmpty
-                        ? IconButton(
-                      icon: Icon(Icons.clear, size: 14,
-                          color: cs.onSurfaceVariant),
-                      onPressed: () => _search.clear(),
-                      padding: EdgeInsets.zero,
-                    )
-                        : null,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 6),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: cs.outlineVariant),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: cs.outlineVariant),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              // Type toggles + legend
-              Row(
-                children: [
-                  _ToggleChip(
-                    label: 'Bloc',
-                    color: cs.primary,
-                    active: _showBlocs,
-                    onTap: () => setState(() => _showBlocs = !_showBlocs),
-                  ),
-                  const SizedBox(width: 6),
-                  _ToggleChip(
-                    label: 'Cubit',
-                    color: cs.tertiary,
-                    active: _showCubits,
-                    onTap: () => setState(() => _showCubits = !_showCubits),
-                  ),
-                  const Spacer(),
-                  Text('${alive.length}/${_allAlive.length} shown',
-                      style: theme.textTheme.labelSmall
-                          ?.copyWith(color: cs.onSurfaceVariant)),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    icon: const Icon(Icons.auto_fix_high, size: 14),
-                    tooltip: 'Reset positions',
-                    onPressed: () => setState(() => _positions.clear()),
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.all(4),
-                    constraints:
-                    const BoxConstraints(minWidth: 28, minHeight: 28),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        // ── Canvas ──────────────────────────────────────────────────────
+        _buildToolbar(cs),
         Expanded(
           child: alive.isEmpty
               ? Center(
@@ -194,63 +122,129 @@ class _GraphTabState extends State<GraphTab>
           )
               : LayoutBuilder(
             builder: (context, constraints) {
-              final size = Size(
-                  constraints.maxWidth, constraints.maxHeight);
+              final size =
+              Size(constraints.maxWidth, constraints.maxHeight);
               _ensurePositions(alive, size);
-
-              return Listener(
-                onPointerMove: (event) {
-                  if (_draggingId == null) return;
-                  final type = alive
-                      .firstWhere(
-                          (r) => r.instanceId == _draggingId,
-                      orElse: () => alive.first)
-                      .blocType;
-                  if (!_positions.containsKey(type)) return;
-                  setState(() {
-                    final old = _positions[type]!;
-                    _positions[type] = Offset(
-                      (old.dx + event.delta.dx)
-                          .clamp(0, size.width),
-                      (old.dy + event.delta.dy)
-                          .clamp(0, size.height),
-                    );
-                  });
-                },
-                onPointerUp: (_) => _draggingId = null,
-                child: CustomPaint(
-                  size: size,
-                  painter: _EdgePainter(
-                    positions: _positions,
-                    relationships: rels,
-                    colorScheme: cs,
-                    textDirection: Directionality.of(context),
-                  ),
-                  child: Stack(
-                    children: [
-                      for (final r in alive)
-                        if (_positions.containsKey(r.blocType))
-                          _buildNode(r, cs, size),
-                    ],
+              // GestureDetector claims pan gestures in the arena,
+              // preventing the Drawer from interpreting them as
+              // a close swipe. Listener handles the actual movement.
+              return GestureDetector(
+                onPanStart: (_) {},
+                onPanUpdate: (_) {},
+                onPanEnd: (_) {},
+                onTap: () =>
+                    setState(() => _selectedType = null),
+                child: Listener(
+                  behavior: HitTestBehavior.translucent,
+                  onPointerMove: (event) {
+                    if (_draggingId == null) return;
+                    final type = alive
+                        .where((r) => r.instanceId == _draggingId)
+                        .map((r) => r.blocType)
+                        .firstOrNull;
+                    if (type == null ||
+                        !_positions.containsKey(type)) return;
+                    setState(() {
+                      final old = _positions[type]!;
+                      _positions[type] = Offset(
+                        (old.dx + event.delta.dx).clamp(0, size.width),
+                        (old.dy + event.delta.dy).clamp(0, size.height),
+                      );
+                    });
+                  },
+                  onPointerUp: (_) => _draggingId = null,
+                  child: CustomPaint(
+                    size: size,
+                    painter: _EdgePainter(
+                      positions: _positions,
+                      relationships: _s.relationships,
+                      colorScheme: cs,
+                      textDirection: Directionality.of(context),
+                      selectedType: _selectedType,
+                    ),
+                    child: Stack(
+                      children: [
+                        for (final r in alive)
+                          if (_positions.containsKey(r.blocType))
+                            _buildNode(r, cs, size),
+                      ],
+                    ),
                   ),
                 ),
               );
             },
           ),
         ),
-        // ── Detail table ────────────────────────────────────────────────
-        Container(
-          height: 120,
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
-            border: Border(top: BorderSide(color: cs.outlineVariant)),
-          ),
-          child: ListView(
-            padding: const EdgeInsets.all(8),
-            children: [for (final r in alive) _DetailRow(record: r)],
-          ),
-        ),
+        _buildDetailPanel(cs),
       ],
+    );
+  }
+
+  Widget _buildToolbar(ColorScheme cs) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: cs.outlineVariant)),
+      ),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 34,
+            child: TextField(
+              controller: _search,
+              style: const TextStyle(fontSize: 12),
+              decoration: InputDecoration(
+                hintText: 'Search by name...',
+                hintStyle:
+                TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                prefixIcon: Icon(Icons.search, size: 16,
+                    color: cs.onSurfaceVariant),
+                suffixIcon: _search.text.isNotEmpty
+                    ? IconButton(
+                  icon: Icon(Icons.clear, size: 14,
+                      color: cs.onSurfaceVariant),
+                  onPressed: () => _search.clear(),
+                  padding: EdgeInsets.zero,
+                )
+                    : null,
+                isDense: true,
+                contentPadding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: cs.outlineVariant)),
+                enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: cs.outlineVariant)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              _Toggle('Bloc', cs.primary, _showBlocs,
+                      () => setState(() => _showBlocs = !_showBlocs)),
+              const SizedBox(width: 6),
+              _Toggle('Cubit', cs.tertiary, _showCubits,
+                      () => setState(() => _showCubits = !_showCubits)),
+              const Spacer(),
+              Text('${_filtered.length}/${_allAlive.length}',
+                  style: TextStyle(
+                      fontSize: 10, color: cs.onSurfaceVariant)),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.auto_fix_high, size: 14),
+                tooltip: 'Reset positions',
+                onPressed: () => setState(() => _positions.clear()),
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.all(4),
+                constraints:
+                const BoxConstraints(minWidth: 28, minHeight: 28),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -258,22 +252,30 @@ class _GraphTabState extends State<GraphTab>
       BlocLifecycleRecord r, ColorScheme cs, Size canvasSize) {
     final pos = _positions[r.blocType]!;
     final color = r.isBloc ? cs.primary : cs.tertiary;
+    final isSel = _selectedType == r.blocType;
 
     return Positioned(
-      left: pos.dx - 50,
-      top: pos.dy - 24,
+      left: pos.dx - 52,
+      top: pos.dy - 26,
       child: Listener(
-        onPointerDown: (_) => _draggingId = r.instanceId,
+        behavior: HitTestBehavior.opaque,
+        onPointerDown: (_) {
+          _draggingId = r.instanceId;
+          setState(() => _selectedType = r.blocType);
+        },
         child: MouseRegion(
           cursor: SystemMouseCursors.grab,
           child: Container(
-            width: 100,
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+            width: 104,
+            padding:
+            const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
+              color: color.withValues(alpha: isSel ? 0.25 : 0.12),
               borderRadius: BorderRadius.circular(10),
-              border:
-              Border.all(color: color.withValues(alpha: 0.4), width: 1),
+              border: Border.all(
+                color: isSel ? color : color.withValues(alpha: 0.4),
+                width: isSel ? 2 : 1,
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -297,9 +299,126 @@ class _GraphTabState extends State<GraphTab>
       ),
     );
   }
-}
 
-// ── Edge painter ────────────────────────────────────────────────────────────
+  Widget _buildDetailPanel(ColorScheme cs) {
+    final sel = _selectedRecord;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      constraints: BoxConstraints(
+        maxHeight: sel != null ? 140 : 40,
+      ),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+        border: Border(top: BorderSide(color: cs.outlineVariant)),
+      ),
+      child: sel == null
+          ? Center(
+          child: Text('Tap a node to see details',
+              style: TextStyle(
+                  fontSize: 11, color: cs.onSurfaceVariant)))
+          : SingleChildScrollView(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: sel.isBloc ? cs.primary : cs.tertiary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(sel.blocType,
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w600),
+                      overflow: TextOverflow.ellipsis),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: (sel.isBloc ? cs.primary : cs.tertiary)
+                        .withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(sel.isBloc ? 'Bloc' : 'Cubit',
+                      style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: sel.isBloc
+                              ? cs.primary
+                              : cs.tertiary)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            _detailRow('Transitions', '${sel.transitionCount}', cs),
+            _detailRow('Alive for',
+                _fmtDur(sel.lifetime), cs),
+            _detailRow(
+                'Avg processing',
+                sel.avgProcessingTime.inMicroseconds > 0
+                    ? '${(sel.avgProcessingTime.inMicroseconds / 1000).toStringAsFixed(1)}ms'
+                    : '–',
+                cs),
+            _detailRow(
+                'Connected to',
+                _connectedTo(sel.blocType).isEmpty
+                    ? 'none detected'
+                    : _connectedTo(sel.blocType).join(', '),
+                cs),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value, ColorScheme cs) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(label,
+                style: TextStyle(
+                    fontSize: 10, color: cs.onSurfaceVariant)),
+          ),
+          Expanded(
+            child: Text(value,
+                style: const TextStyle(
+                    fontSize: 10, fontWeight: FontWeight.w500),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<String> _connectedTo(String blocType) {
+    final result = <String>{};
+    for (final r in _s.relationships) {
+      if (r.sourceBlocType == blocType) result.add(r.targetBlocType);
+      if (r.targetBlocType == blocType) result.add(r.sourceBlocType);
+    }
+    return result.toList();
+  }
+
+  String _fmtDur(Duration d) {
+    if (d.inMinutes > 0) return '${d.inMinutes}m ${d.inSeconds % 60}s';
+    if (d.inSeconds > 0) return '${d.inSeconds}s';
+    return '${d.inMilliseconds}ms';
+  }
+}
 
 class _EdgePainter extends CustomPainter {
   _EdgePainter({
@@ -307,12 +426,14 @@ class _EdgePainter extends CustomPainter {
     required this.relationships,
     required this.colorScheme,
     required this.textDirection,
+    this.selectedType,
   });
 
   final Map<String, Offset> positions;
   final List<BlocRelationship> relationships;
   final ColorScheme colorScheme;
   final TextDirection textDirection;
+  final String? selectedType;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -325,16 +446,24 @@ class _EdgePainter extends CustomPainter {
       final to = positions[rel.targetBlocType];
       if (from == null || to == null) continue;
 
+      final isHighlighted = selectedType != null &&
+          (rel.sourceBlocType == selectedType ||
+              rel.targetBlocType == selectedType);
+
       paint
-        ..color = colorScheme.outline
-            .withValues(alpha: 0.3 + rel.strength * 0.5)
-        ..strokeWidth = 1.0 + rel.strength * 2.0;
+        ..color = isHighlighted
+            ? colorScheme.primary.withValues(alpha: 0.7)
+            : colorScheme.outline
+            .withValues(alpha: 0.2 + rel.strength * 0.3)
+        ..strokeWidth = isHighlighted
+            ? 2.5
+            : 1.0 + rel.strength * 2.0;
 
       canvas.drawLine(from, to, paint);
 
       final angle = math.atan2(to.dy - from.dy, to.dx - from.dx);
       final stop = Offset(
-          to.dx - 50 * math.cos(angle), to.dy - 50 * math.sin(angle));
+          to.dx - 52 * math.cos(angle), to.dy - 52 * math.sin(angle));
       final p1 = Offset(stop.dx - 8 * math.cos(angle - 0.5),
           stop.dy - 8 * math.sin(angle - 0.5));
       final p2 = Offset(stop.dx - 8 * math.cos(angle + 0.5),
@@ -369,15 +498,8 @@ class _EdgePainter extends CustomPainter {
   bool shouldRepaint(_EdgePainter old) => true;
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-class _ToggleChip extends StatelessWidget {
-  const _ToggleChip({
-    required this.label,
-    required this.color,
-    required this.active,
-    required this.onTap,
-  });
+class _Toggle extends StatelessWidget {
+  const _Toggle(this.label, this.color, this.active, this.onTap);
   final String label;
   final Color color;
   final bool active;
@@ -385,6 +507,7 @@ class _ToggleChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -393,17 +516,15 @@ class _ToggleChip extends StatelessWidget {
           color: active ? color.withValues(alpha: 0.15) : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: active
-                ? color.withValues(alpha: 0.5)
-                : Theme.of(context).colorScheme.outlineVariant,
-          ),
+              color: active
+                  ? color.withValues(alpha: 0.5)
+                  : cs.outlineVariant),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-                width: 8,
-                height: 8,
+                width: 8, height: 8,
                 decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: active ? color : Colors.grey)),
@@ -412,49 +533,9 @@ class _ToggleChip extends StatelessWidget {
                 style: TextStyle(
                     fontSize: 10,
                     fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                    color: active
-                        ? color
-                        : Theme.of(context).colorScheme.onSurfaceVariant)),
+                    color: active ? color : cs.onSurfaceVariant)),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.record});
-  final BlocLifecycleRecord record;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final avgMs = record.avgProcessingTime.inMicroseconds / 1000;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        children: [
-          Container(
-            width: 8, height: 8,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: record.isBloc ? cs.primary : cs.tertiary,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(record.blocType,
-                style: const TextStyle(
-                    fontSize: 11, fontWeight: FontWeight.w500),
-                maxLines: 1, overflow: TextOverflow.ellipsis),
-          ),
-          Text('${record.transitionCount} trans.',
-              style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
-          const SizedBox(width: 12),
-          Text(avgMs > 0 ? '${avgMs.toStringAsFixed(1)}ms avg' : '–',
-              style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
-        ],
       ),
     );
   }

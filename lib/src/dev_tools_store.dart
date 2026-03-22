@@ -11,20 +11,14 @@ import 'dev_tools_entry.dart';
 class DevToolsStore extends ChangeNotifier {
   DevToolsStore();
 
-  // ── Singleton ─────────────────────────────────────────────────────────────
-
   static DevToolsStore? _instance;
   static DevToolsStore get instance => _instance ??= DevToolsStore();
   static set instance(DevToolsStore store) => _instance = store;
-
-  // ── History ───────────────────────────────────────────────────────────────
 
   final List<DevToolsEntry> _entries = [];
 
   List<DevToolsEntry> get entries => List.unmodifiable(_entries);
   int get length => _entries.length;
-
-  // ── Time-travel cursor ────────────────────────────────────────────────────
 
   int _currentIndex = -1;
 
@@ -34,8 +28,6 @@ class DevToolsStore extends ChangeNotifier {
       _currentIndex >= 0 && _currentIndex < _entries.length
           ? _entries[_currentIndex]
           : null;
-
-  // ── Live BLoC instance registry (for state replay) ────────────────────────
 
   final Map<int, BlocBase<dynamic>> _liveInstances = {};
 
@@ -65,8 +57,6 @@ class DevToolsStore extends ChangeNotifier {
     final bloc = _findLiveBloc(entry.blocType);
     if (bloc == null || entry.state == null) return false;
     try {
-      // BlocBase extends Emittable, which has emit().
-      // In debug/dev mode this is accessible.
       (bloc as dynamic).emit(entry.state);
       return true;
     } catch (_) {
@@ -76,8 +66,6 @@ class DevToolsStore extends ChangeNotifier {
 
   /// Whether a live instance exists for the given bloc type.
   bool canReplay(String blocType) => _findLiveBloc(blocType) != null;
-
-  // ── BLoC lifecycle tracking ───────────────────────────────────────────────
 
   final Map<int, BlocLifecycleRecord> _lifecycles = {};
 
@@ -114,8 +102,6 @@ class DevToolsStore extends ChangeNotifier {
     }
   }
 
-  // ── Relationship detection ────────────────────────────────────────────────
-
   static const int correlationWindowMs = 100;
 
   final Map<String, BlocRelationship> _relationships = {};
@@ -143,16 +129,12 @@ class DevToolsStore extends ChangeNotifier {
     }
   }
 
-  // ── Recording ─────────────────────────────────────────────────────────────
-
   void addEntry(DevToolsEntry entry) {
     _detectRelationships(entry);
     _entries.add(entry);
     _currentIndex = _entries.length - 1;
     notifyListeners();
   }
-
-  // ── Time-travel actions ───────────────────────────────────────────────────
 
   void jumpTo(int index) {
     if (index < 0 || index >= _entries.length) return;
@@ -177,8 +159,6 @@ class DevToolsStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Slider helpers ────────────────────────────────────────────────────────
-
   List<DevToolsEntry> get activeEntries =>
       _entries.where((e) => !e.isSkipped).toList();
 
@@ -196,14 +176,10 @@ class DevToolsStore extends ChangeNotifier {
     if (realIndex >= 0) jumpTo(realIndex);
   }
 
-  // ── Filter helpers ────────────────────────────────────────────────────────
-
   Set<String> get blocTypes => _entries.map((e) => e.blocType).toSet();
 
   List<DevToolsEntry> entriesForBloc(String blocType) =>
       _entries.where((e) => e.blocType == blocType).toList();
-
-  // ── Performance helpers ───────────────────────────────────────────────────
 
   List<DevToolsEntry> get entriesWithTiming =>
       _entries.where((e) => e.processingDuration != null).toList();

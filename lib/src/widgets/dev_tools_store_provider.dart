@@ -34,11 +34,11 @@ class DevToolsStoreProvider extends InheritedWidget {
   /// above the given [context].
   static DevToolsStore of(BuildContext context) {
     final provider =
-        context.dependOnInheritedWidgetOfExactType<DevToolsStoreProvider>();
+    context.dependOnInheritedWidgetOfExactType<DevToolsStoreProvider>();
     assert(
-      provider != null,
-      'No DevToolsStoreProvider found in the widget tree. '
-      'Wrap your app with DevToolsStoreProvider or use DevToolsStore.instance instead.',
+    provider != null,
+    'No DevToolsStoreProvider found in the widget tree. '
+        'Wrap your app with DevToolsStoreProvider or use DevToolsStore.instance instead.',
     );
     return provider!.store;
   }

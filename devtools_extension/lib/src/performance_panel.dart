@@ -35,7 +35,6 @@ class PerformancePanel extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // ── Summary cards ───────────────────────────────────────────────
         Row(
           children: [
             Expanded(
@@ -53,7 +52,6 @@ class PerformancePanel extends StatelessWidget {
         ),
         const SizedBox(height: 20),
 
-        // ── Per-BLoC breakdown ──────────────────────────────────────────
         if (perBloc.isNotEmpty) ...[
           const Text('Per-BLoC breakdown',
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
@@ -62,7 +60,6 @@ class PerformancePanel extends StatelessWidget {
           const SizedBox(height: 20),
         ],
 
-        // ── Slowest transitions ─────────────────────────────────────────
         if (slowestList.isNotEmpty) ...[
           const Text('Slowest transitions',
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
@@ -95,8 +92,6 @@ class PerformancePanel extends StatelessWidget {
   }
 }
 
-// ── Metric card ─────────────────────────────────────────────────────────────
-
 class _Card extends StatelessWidget {
   const _Card(this.label, this.value, this.color);
   final String label;
@@ -125,8 +120,6 @@ class _Card extends StatelessWidget {
     );
   }
 }
-
-// ── Per-BLoC bar ────────────────────────────────────────────────────────────
 
 class _BlocBar extends StatelessWidget {
   const _BlocBar({required this.bloc, required this.maxUs});
@@ -194,8 +187,6 @@ class _BlocBar extends StatelessWidget {
     return Colors.red;
   }
 }
-
-// ── Slowest transition row ──────────────────────────────────────────────────
 
 class _SlowestRow extends StatelessWidget {
   const _SlowestRow({required this.index, required this.entry});

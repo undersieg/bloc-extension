@@ -1,10 +1,8 @@
 /// Time-travel dev tools for flutter_bloc — inspired by Redux DevTools.
 ///
-/// This library provides:
-/// - [DevToolsStore] — centralized state/history manager for the dev tools.
-/// - [BlocDevToolsObserver] — a [BlocObserver] that records transitions.
-/// - [BlocDevToolsPanel] — a ready-to-use Flutter widget for the UI.
-/// - [DevToolsEntry] — the data model for a single recorded state change.
+/// Provides state history, BLoC connection graph, performance metrics,
+/// state diff, event timeline, time-travel controls, and a Flutter
+/// DevTools Extension tab.
 ///
 /// ## Quick start
 ///
@@ -12,15 +10,12 @@
 /// import 'package:bloc_devtools_extension/bloc_devtools_extension.dart';
 ///
 /// void main() {
-///   final devToolsStore = DevToolsStore();
-///   Bloc.observer = BlocDevToolsObserver(devToolsStore);
-///
-///   runApp(MyApp(devToolsStore: devToolsStore));
+///   Bloc.observer = BlocDevToolsObserver(DevToolsStore.instance);
+///   // Register the VM service extension for the DevTools browser tab:
+///   registerBlocDevToolsServiceExtension(DevToolsStore.instance);
+///   runApp(MyApp());
 /// }
 /// ```
-///
-/// Then place [BlocDevToolsPanel] wherever makes sense — a drawer, an overlay,
-/// or a dedicated debug route.
 library bloc_devtools_extension;
 
 export 'src/dev_tools_entry.dart';

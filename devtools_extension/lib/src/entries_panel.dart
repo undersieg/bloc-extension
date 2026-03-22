@@ -2,26 +2,23 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
-/// Callback for actions that send a command to the running app via VM service.
+/// Callback for actions sent to the running app via VM service.
 typedef ServiceAction = Future<void> Function(int index);
 
-/// Full-featured History panel for the DevTools browser extension.
-/// Mirrors the in-app HistoryTab: filter chips, slider, eye icon,
-/// diff/json toggle, replay button, gap indicators.
+/// History panel for the DevTools browser extension.
+/// Filter chips, slider, diff/json toggle, replay — no skip/eye.
 class EntriesPanel extends StatefulWidget {
   const EntriesPanel({
     super.key,
     required this.entries,
     this.summary,
     this.onJumpTo,
-    this.onToggleSkip,
     this.onReplay,
   });
 
   final List<Map<String, dynamic>> entries;
   final Map<String, dynamic>? summary;
   final ServiceAction? onJumpTo;
-  final ServiceAction? onToggleSkip;
   final ServiceAction? onReplay;
 
   @override
@@ -33,36 +30,24 @@ class _EntriesPanelState extends State<EntriesPanel> {
   String? _filterBlocType;
   bool _showDiff = false;
 
-  List<Map<String, dynamic>> get _allEntries => widget.entries;
+  List<Map<String, dynamic>> get _all => widget.entries;
 
   List<Map<String, dynamic>> get _filtered {
-    if (_filterBlocType == null) return _allEntries;
-    return _allEntries
-        .where((e) => e['blocType'] == _filterBlocType)
-        .toList();
+    if (_filterBlocType == null) return _all;
+    return _all.where((e) => e['blocType'] == _filterBlocType).toList();
   }
 
   Set<String> get _blocTypes =>
-      _allEntries.map((e) => e['blocType'] as String? ?? '').toSet();
+      _all.map((e) => e['blocType'] as String? ?? '').toSet();
 
-  List<String> get _aliveBlocTypes => List<String>.from(
-      (widget.summary?['aliveBlocTypes'] as List?) ?? []);
-
-  List<Map<String, dynamic>> get _activeEntries =>
-      _allEntries.where((e) => e['isSkipped'] != true).toList();
-
-  int get _activeIndex {
-    if (_selectedIndex < 0 || _selectedIndex >= _allEntries.length) return -1;
-    final selected = _allEntries[_selectedIndex];
-    if (selected['isSkipped'] == true) return -1;
-    return _activeEntries.indexOf(selected);
-  }
+  List<String> get _aliveBlocTypes =>
+      List<String>.from((widget.summary?['aliveBlocTypes'] as List?) ?? []);
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    if (_allEntries.isEmpty) {
+    if (_all.isEmpty) {
       return const Center(
           child: Text('No states recorded yet. Interact with your app.'));
     }
@@ -84,10 +69,6 @@ class _EntriesPanelState extends State<EntriesPanel> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // Filter chips
-  // ═══════════════════════════════════════════════════════════════════════════
-
   Widget _buildFilterRow(ColorScheme cs) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -103,13 +84,13 @@ class _EntriesPanelState extends State<EntriesPanel> {
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
-                _chip('All (${_allEntries.length})', _filterBlocType == null,
+                _chip('All (${_all.length})', _filterBlocType == null,
                         () => setState(() => _filterBlocType = null), cs),
                 for (final t in _blocTypes)
                   Padding(
                     padding: const EdgeInsets.only(left: 6),
                     child: _chip(
-                      '$t (${_allEntries.where((e) => e['blocType'] == t).length})',
+                      '$t (${_all.where((e) => e['blocType'] == t).length})',
                       _filterBlocType == t,
                           () => setState(() => _filterBlocType = t),
                       cs,
@@ -147,21 +128,14 @@ class _EntriesPanelState extends State<EntriesPanel> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // Slider
-  // ═══════════════════════════════════════════════════════════════════════════
-
   Widget _buildSlider(ColorScheme cs) {
-    final active = _activeEntries;
-    final idx = _activeIndex;
-    final ok = active.isNotEmpty;
+    final total = _all.length;
+    final idx = _selectedIndex.clamp(0, total - 1);
+    final ok = total > 0;
 
-    void jumpToActiveIdx(int ai) {
-      if (ai < 0 || ai >= active.length) return;
-      final target = active[ai];
-      final realIdx = _allEntries.indexOf(target);
-      setState(() => _selectedIndex = realIdx);
-      widget.onJumpTo?.call(realIdx);
+    void jump(int i) {
+      setState(() => _selectedIndex = i);
+      widget.onJumpTo?.call(i);
     }
 
     return Container(
@@ -171,9 +145,9 @@ class _EntriesPanelState extends State<EntriesPanel> {
       ),
       child: Row(
         children: [
-          _btn(Icons.skip_previous, ok ? () => jumpToActiveIdx(0) : null),
+          _btn(Icons.skip_previous, ok ? () => jump(0) : null),
           _btn(Icons.chevron_left,
-              ok && idx > 0 ? () => jumpToActiveIdx(idx - 1) : null),
+              ok && idx > 0 ? () => jump(idx - 1) : null),
           Expanded(
             child: SliderTheme(
               data: SliderThemeData(
@@ -187,35 +161,21 @@ class _EntriesPanelState extends State<EntriesPanel> {
                 thumbColor: cs.primary,
               ),
               child: Slider(
-                value: ok
-                    ? idx.toDouble().clamp(0, (active.length - 1).toDouble())
-                    : 0,
+                value: ok ? idx.toDouble() : 0,
                 min: 0,
-                max: ok
-                    ? (active.length - 1)
-                    .toDouble()
-                    .clamp(1, double.infinity)
-                    : 1,
-                divisions:
-                ok && active.length > 1 ? active.length - 1 : null,
-                onChanged: ok ? (v) => jumpToActiveIdx(v.round()) : null,
+                max: ok ? (total - 1).toDouble().clamp(1, double.infinity) : 1,
+                divisions: total > 1 ? total - 1 : null,
+                onChanged: ok ? (v) => jump(v.round()) : null,
               ),
             ),
           ),
           _btn(Icons.chevron_right,
-              ok && idx < active.length - 1
-                  ? () => jumpToActiveIdx(idx + 1)
-                  : null),
-          _btn(Icons.skip_next,
-              ok ? () => jumpToActiveIdx(active.length - 1) : null),
+              ok && idx < total - 1 ? () => jump(idx + 1) : null),
+          _btn(Icons.skip_next, ok ? () => jump(total - 1) : null),
         ],
       ),
     );
   }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // Timeline list
-  // ═══════════════════════════════════════════════════════════════════════════
 
   Widget _buildTimeline(ColorScheme cs) {
     final list = _filtered;
@@ -225,15 +185,13 @@ class _EntriesPanelState extends State<EntriesPanel> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       itemBuilder: (context, i) {
         final entry = list[i];
-        final realIdx = _allEntries.indexOf(entry);
+        final realIdx = _all.indexOf(entry);
         final isSelected = realIdx == _selectedIndex;
-        final isSkipped = entry['isSkipped'] == true;
         final event = entry['event']?.toString() ?? '(initial state)';
         final blocType = entry['blocType'] as String? ?? '';
         final procUs = entry['processingUs'] as int?;
         final ts = entry['timestamp'] as String? ?? '';
 
-        // Time gap from previous entry.
         Duration? gap;
         if (i > 0) {
           final prevTs = list[i - 1]['timestamp'] as String?;
@@ -247,7 +205,6 @@ class _EntriesPanelState extends State<EntriesPanel> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Gap indicator
             if (gap != null && gap.inMilliseconds > 200)
               Padding(
                 padding: const EdgeInsets.only(left: 26, top: 2, bottom: 2),
@@ -261,7 +218,6 @@ class _EntriesPanelState extends State<EntriesPanel> {
                   ],
                 ),
               ),
-            // Entry row
             Material(
               color: isSelected
                   ? cs.primaryContainer.withValues(alpha: 0.5)
@@ -271,106 +227,68 @@ class _EntriesPanelState extends State<EntriesPanel> {
                   setState(() => _selectedIndex = realIdx);
                   widget.onJumpTo?.call(realIdx);
                 },
-                child: Opacity(
-                  opacity: isSkipped ? 0.4 : 1.0,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 7),
-                    child: Row(
-                      children: [
-                        // Timeline dot
-                        Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isSelected
-                                ? cs.primary
-                                : Colors.transparent,
-                            border: Border.all(
-                              color:
-                              isSelected ? cs.primary : cs.outline,
-                              width: isSelected ? 3 : 1.5,
-                            ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 7),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color:
+                          isSelected ? cs.primary : Colors.transparent,
+                          border: Border.all(
+                            color: isSelected ? cs.primary : cs.outline,
+                            width: isSelected ? 3 : 1.5,
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        // Info
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(event,
-                                  style: TextStyle(
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(event,
+                                style: TextStyle(
                                     fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    decoration: isSkipped
-                                        ? TextDecoration.lineThrough
-                                        : null,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis),
-                              const SizedBox(height: 2),
-                              Row(
-                                children: [
-                                  Text(blocType,
-                                      style: TextStyle(
-                                          fontSize: 10,
-                                          color: cs.onSurfaceVariant)),
-                                  if (procUs != null) ...[
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 4, vertical: 1),
-                                      decoration: BoxDecoration(
-                                        color: _perfColor(procUs)
-                                            .withValues(alpha: 0.15),
-                                        borderRadius:
-                                        BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        '${(procUs / 1000).toStringAsFixed(1)}ms',
-                                        style: TextStyle(
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w600,
-                                            color: _perfColor(procUs)),
-                                      ),
+                                    fontWeight: FontWeight.w500),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis),
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                Text(blocType,
+                                    style: TextStyle(
+                                        fontSize: 10,
+                                        color: cs.onSurfaceVariant)),
+                                if (procUs != null) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 4, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: _perfColor(procUs)
+                                          .withValues(alpha: 0.15),
+                                      borderRadius:
+                                      BorderRadius.circular(4),
                                     ),
-                                  ],
+                                    child: Text(
+                                      '${(procUs / 1000).toStringAsFixed(1)}ms',
+                                      style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w600,
+                                          color: _perfColor(procUs)),
+                                    ),
+                                  ),
                                 ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Eye icon (skip/unskip)
-                        SizedBox(
-                          width: 36,
-                          height: 36,
-                          child: IconButton(
-                            icon: Icon(
-                              isSkipped
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                              size: 18,
-                              color: isSkipped
-                                  ? Colors.red.withValues(alpha: 0.6)
-                                  : cs.onSurfaceVariant,
+                              ],
                             ),
-                            tooltip: isSkipped ? 'Unskip' : 'Skip',
-                            onPressed: () {
-                              widget.onToggleSkip?.call(realIdx);
-                              setState(() {
-                                // Optimistic update
-                                entry['isSkipped'] = !(isSkipped);
-                              });
-                            },
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                                minWidth: 36, minHeight: 36),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -381,18 +299,14 @@ class _EntriesPanelState extends State<EntriesPanel> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // Inspector (right panel)
-  // ═══════════════════════════════════════════════════════════════════════════
-
   Widget _buildInspector(ColorScheme cs) {
-    if (_selectedIndex < 0 || _selectedIndex >= _allEntries.length) {
+    if (_selectedIndex < 0 || _selectedIndex >= _all.length) {
       return Center(
           child: Text('Select an entry to inspect',
               style: TextStyle(color: cs.onSurfaceVariant)));
     }
 
-    final entry = _allEntries[_selectedIndex];
+    final entry = _all[_selectedIndex];
     final blocType = entry['blocType'] as String? ?? '';
     final hasPrev = entry['previousState'] != null &&
         entry['state'] is Map &&
@@ -402,7 +316,6 @@ class _EntriesPanelState extends State<EntriesPanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── Toolbar ─────────────────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           child: Wrap(
@@ -434,7 +347,6 @@ class _EntriesPanelState extends State<EntriesPanel> {
           ),
         ),
         Divider(height: 1, color: cs.outlineVariant),
-        // ── Content ─────────────────────────────────────────────────────
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(10),
@@ -584,10 +496,6 @@ class _EntriesPanelState extends State<EntriesPanel> {
     return Column(
         crossAxisAlignment: CrossAxisAlignment.start, children: diffs);
   }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // Helpers
-  // ═══════════════════════════════════════════════════════════════════════════
 
   Widget _btn(IconData icon, VoidCallback? onPressed) {
     return IconButton(

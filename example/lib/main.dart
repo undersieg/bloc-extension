@@ -11,10 +11,6 @@ void main() {
   runApp(const DemoApp());
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// App root — provides all 4 blocs
-// ═════════════════════════════════════════════════════════════════════════════
-
 class DemoApp extends StatelessWidget {
   const DemoApp({super.key});
 
@@ -57,10 +53,6 @@ class DemoApp extends StatelessWidget {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Home page — bottom nav with Counter, Settings, About tabs
-// ═════════════════════════════════════════════════════════════════════════════
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -77,7 +69,6 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text('DevTools Demo'),
         actions: [
-          // Theme toggle
           IconButton(
             icon: BlocBuilder<ThemeCubit, ThemeState>(
               builder: (_, s) =>
@@ -86,7 +77,6 @@ class _HomePageState extends State<HomePage> {
             tooltip: 'Toggle theme',
             onPressed: () => context.read<ThemeCubit>().toggleTheme(),
           ),
-          // DevTools drawer
           Builder(
             builder: (ctx) => IconButton(
               icon: const Icon(Icons.bug_report),
@@ -126,10 +116,6 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Counter page — CounterBloc + HistoryBloc connection
-// ═════════════════════════════════════════════════════════════════════════════
-
 class CounterPage extends StatelessWidget {
   const CounterPage({super.key});
 
@@ -160,7 +146,6 @@ class CounterPage extends StatelessWidget {
                       fontWeight: FontWeight.w700, color: cs.primary),
                 ),
                 const SizedBox(height: 8),
-                // Milestone indicator
                 BlocBuilder<HistoryBloc, HistoryState>(
                   builder: (context, histState) {
                     return Text(
@@ -171,7 +156,6 @@ class CounterPage extends StatelessWidget {
                   },
                 ),
                 const SizedBox(height: 32),
-                // Action buttons
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -227,10 +211,6 @@ class CounterPage extends StatelessWidget {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Settings page — SettingsCubit with multi-field state (diff demo)
-// ═════════════════════════════════════════════════════════════════════════════
-
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
@@ -250,7 +230,6 @@ class SettingsPage extends StatelessWidget {
                     color: Theme.of(context).colorScheme.onSurfaceVariant)),
             const SizedBox(height: 24),
 
-            // Font size slider
             ListTile(
               leading: const Icon(Icons.text_fields),
               title: const Text('Font size'),
@@ -266,7 +245,6 @@ class SettingsPage extends StatelessWidget {
               trailing: Text('${settings.fontSize.round()}px'),
             ),
 
-            // Language dropdown
             ListTile(
               leading: const Icon(Icons.language),
               title: const Text('Language'),
@@ -284,7 +262,6 @@ class SettingsPage extends StatelessWidget {
               ),
             ),
 
-            // Notifications toggle
             SwitchListTile(
               secondary: const Icon(Icons.notifications_outlined),
               title: const Text('Notifications'),
@@ -296,7 +273,6 @@ class SettingsPage extends StatelessWidget {
                   context.read<SettingsCubit>().toggleNotifications(),
             ),
 
-            // Auto-save toggle
             SwitchListTile(
               secondary: const Icon(Icons.save_outlined),
               title: const Text('Auto-save'),
@@ -309,7 +285,6 @@ class SettingsPage extends StatelessWidget {
 
             const Divider(height: 32),
 
-            // Theme color picker (ThemeCubit)
             Text('Theme color',
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
@@ -359,10 +334,6 @@ class SettingsPage extends StatelessWidget {
     );
   }
 }
-
-// ═════════════════════════════════════════════════════════════════════════════
-// About page — shows what each bloc demonstrates
-// ═════════════════════════════════════════════════════════════════════════════
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
