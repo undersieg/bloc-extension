@@ -18,6 +18,7 @@ class _HistoryTabState extends State<HistoryTab>
     with AutomaticKeepAliveClientMixin {
   String? _filterBlocType;
   bool _showDiff = false;
+  final TextEditingController _chipSearch = TextEditingController();
 
   @override
   bool get wantKeepAlive => true;
@@ -28,6 +29,7 @@ class _HistoryTabState extends State<HistoryTab>
   void initState() {
     super.initState();
     _s.addListener(_rebuild);
+    _chipSearch.addListener(_rebuild);
   }
 
   @override
@@ -42,6 +44,7 @@ class _HistoryTabState extends State<HistoryTab>
   @override
   void dispose() {
     _s.removeListener(_rebuild);
+    _chipSearch.dispose();
     super.dispose();
   }
 
@@ -52,6 +55,13 @@ class _HistoryTabState extends State<HistoryTab>
   List<DevToolsEntry> get _filtered {
     if (_filterBlocType == null) return _s.entries;
     return _s.entriesForBloc(_filterBlocType!);
+  }
+
+  List<String> get _visibleTypes {
+    final types = _s.blocTypes.toList();
+    final q = _chipSearch.text.trim().toLowerCase();
+    if (q.isEmpty) return types;
+    return types.where((t) => t.toLowerCase().contains(q)).toList();
   }
 
   @override
@@ -71,35 +81,81 @@ class _HistoryTabState extends State<HistoryTab>
   }
 
   Widget _buildFilterRow(ColorScheme cs) {
-    final types = _s.blocTypes.toList();
+    final types = _visibleTypes;
+    final allTypes = _s.blocTypes;
+    final showSearch = allTypes.length > 3;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: cs.outlineVariant)),
       ),
-      height: 44,
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.filter_list, size: 14, color: cs.onSurfaceVariant),
-          const SizedBox(width: 8),
-          Expanded(
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _FilterChip(
-                  label: 'All (${_s.length})',
-                  selected: _filterBlocType == null,
-                  onTap: () => setState(() => _filterBlocType = null),
-                ),
-                for (final t in types)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 6),
-                    child: _FilterChip(
-                      label: '$t (${_s.entriesForBloc(t).length})',
-                      selected: _filterBlocType == t,
-                      onTap: () => setState(() => _filterBlocType = t),
+          if (showSearch)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: SizedBox(
+                height: 30,
+                child: TextField(
+                  controller: _chipSearch,
+                  style: const TextStyle(fontSize: 11),
+                  decoration: InputDecoration(
+                    hintText: 'Filter blocs...',
+                    hintStyle:
+                    TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                    prefixIcon: Icon(Icons.search, size: 14,
+                        color: cs.onSurfaceVariant),
+                    suffixIcon: _chipSearch.text.isNotEmpty
+                        ? GestureDetector(
+                      onTap: () => _chipSearch.clear(),
+                      child: Icon(Icons.clear, size: 12,
+                          color: cs.onSurfaceVariant),
+                    )
+                        : null,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: cs.outlineVariant),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: cs.outlineVariant),
                     ),
                   ),
+                ),
+              ),
+            ),
+          SizedBox(
+            height: 32,
+            child: Row(
+              children: [
+                Icon(Icons.filter_list, size: 14, color: cs.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      _FilterChip(
+                        label: 'All (${_s.length})',
+                        selected: _filterBlocType == null,
+                        onTap: () => setState(() => _filterBlocType = null),
+                      ),
+                      for (final t in types)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 6),
+                          child: _FilterChip(
+                            label: '$t (${_s.entriesForBloc(t).length})',
+                            selected: _filterBlocType == t,
+                            onTap: () => setState(() => _filterBlocType = t),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

@@ -29,6 +29,7 @@ class _EntriesPanelState extends State<EntriesPanel> {
   int _selectedIndex = -1;
   String? _filterBlocType;
   bool _showDiff = false;
+  final TextEditingController _chipSearch = TextEditingController();
 
   List<Map<String, dynamic>> get _all => widget.entries;
 
@@ -40,8 +41,27 @@ class _EntriesPanelState extends State<EntriesPanel> {
   Set<String> get _blocTypes =>
       _all.map((e) => e['blocType'] as String? ?? '').toSet();
 
+  List<String> get _visibleTypes {
+    final types = _blocTypes.toList();
+    final q = _chipSearch.text.trim().toLowerCase();
+    if (q.isEmpty) return types;
+    return types.where((t) => t.toLowerCase().contains(q)).toList();
+  }
+
   List<String> get _aliveBlocTypes =>
       List<String>.from((widget.summary?['aliveBlocTypes'] as List?) ?? []);
+
+  @override
+  void initState() {
+    super.initState();
+    _chipSearch.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _chipSearch.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,32 +90,78 @@ class _EntriesPanelState extends State<EntriesPanel> {
   }
 
   Widget _buildFilterRow(ColorScheme cs) {
+    final types = _visibleTypes;
+    final showSearch = _blocTypes.length > 3;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: cs.outlineVariant)),
       ),
-      height: 40,
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.filter_list, size: 14, color: cs.onSurfaceVariant),
-          const SizedBox(width: 8),
-          Expanded(
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _chip('All (${_all.length})', _filterBlocType == null,
-                        () => setState(() => _filterBlocType = null), cs),
-                for (final t in _blocTypes)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 6),
-                    child: _chip(
-                      '$t (${_all.where((e) => e['blocType'] == t).length})',
-                      _filterBlocType == t,
-                          () => setState(() => _filterBlocType = t),
-                      cs,
+          if (showSearch)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: SizedBox(
+                height: 30,
+                child: TextField(
+                  controller: _chipSearch,
+                  style: const TextStyle(fontSize: 11),
+                  decoration: InputDecoration(
+                    hintText: 'Filter blocs...',
+                    hintStyle:
+                    TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                    prefixIcon: Icon(Icons.search, size: 14,
+                        color: cs.onSurfaceVariant),
+                    suffixIcon: _chipSearch.text.isNotEmpty
+                        ? GestureDetector(
+                      onTap: () => _chipSearch.clear(),
+                      child: Icon(Icons.clear, size: 12,
+                          color: cs.onSurfaceVariant),
+                    )
+                        : null,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: cs.outlineVariant),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: cs.outlineVariant),
                     ),
                   ),
+                ),
+              ),
+            ),
+          SizedBox(
+            height: 32,
+            child: Row(
+              children: [
+                Icon(Icons.filter_list, size: 14, color: cs.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      _chip('All (${_all.length})', _filterBlocType == null,
+                              () => setState(() => _filterBlocType = null), cs),
+                      for (final t in types)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 6),
+                          child: _chip(
+                            '$t (${_all.where((e) => e['blocType'] == t).length})',
+                            _filterBlocType == t,
+                                () => setState(() => _filterBlocType = t),
+                            cs,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
