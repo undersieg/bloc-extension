@@ -111,8 +111,7 @@ class DevToolsStore extends ChangeNotifier {
   void _detectRelationships(DevToolsEntry newEntry) {
     for (int i = _entries.length - 1; i >= 0; i--) {
       final other = _entries[i];
-      final gap =
-          newEntry.timestamp.difference(other.timestamp).inMilliseconds;
+      final gap = newEntry.timestamp.difference(other.timestamp).inMilliseconds;
       if (gap > correlationWindowMs) break;
       if (gap < 0) continue;
       if (other.blocType == newEntry.blocType) continue;
@@ -120,7 +119,7 @@ class DevToolsStore extends ChangeNotifier {
       final key = '${other.blocType}→${newEntry.blocType}';
       _relationships.putIfAbsent(
         key,
-            () => BlocRelationship(
+        () => BlocRelationship(
           sourceBlocType: other.blocType,
           targetBlocType: newEntry.blocType,
         ),
@@ -195,9 +194,8 @@ class DevToolsStore extends ChangeNotifier {
   DevToolsEntry? get slowestTransition {
     final timed = entriesWithTiming;
     if (timed.isEmpty) return null;
-    return timed.reduce((a, b) =>
-    a.processingDuration!.inMicroseconds >=
-        b.processingDuration!.inMicroseconds
+    return timed.reduce((a, b) => a.processingDuration!.inMicroseconds >=
+            b.processingDuration!.inMicroseconds
         ? a
         : b);
   }

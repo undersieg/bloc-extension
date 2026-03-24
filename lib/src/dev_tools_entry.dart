@@ -8,6 +8,7 @@ class DevToolsEntry {
     required this.timestamp,
     this.previousState,
     this.event,
+    this.isBloc = false,
     this.isSkipped = false,
     this.processingDuration,
   });
@@ -24,6 +25,9 @@ class DevToolsEntry {
   /// The event that triggered this change (null for Cubits / initial).
   final Object? event;
 
+  /// Whether this entry comes from a Bloc (true) or Cubit (false).
+  final bool isBloc;
+
   /// When this entry was recorded.
   final DateTime timestamp;
 
@@ -39,6 +43,7 @@ class DevToolsEntry {
     Object? state,
     Object? previousState,
     Object? event,
+    bool? isBloc,
     DateTime? timestamp,
     bool? isSkipped,
     Duration? processingDuration,
@@ -48,6 +53,7 @@ class DevToolsEntry {
       state: state ?? this.state,
       previousState: previousState ?? this.previousState,
       event: event ?? this.event,
+      isBloc: isBloc ?? this.isBloc,
       timestamp: timestamp ?? this.timestamp,
       isSkipped: isSkipped ?? this.isSkipped,
       processingDuration: processingDuration ?? this.processingDuration,
@@ -89,8 +95,8 @@ class DevToolsEntry {
           type: !prev.containsKey(key)
               ? DiffType.added
               : !curr.containsKey(key)
-              ? DiffType.removed
-              : DiffType.changed,
+                  ? DiffType.removed
+                  : DiffType.changed,
         );
       }
     }

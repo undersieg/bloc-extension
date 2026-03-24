@@ -39,9 +39,9 @@ class DemoApp extends StatelessWidget {
               debugShowCheckedModeBanner: false,
               theme: ThemeData(
                 colorSchemeSeed:
-                seedColors[themeState.seedColor] ?? Colors.deepPurple,
+                    seedColors[themeState.seedColor] ?? Colors.deepPurple,
                 brightness:
-                themeState.isDark ? Brightness.dark : Brightness.light,
+                    themeState.isDark ? Brightness.dark : Brightness.light,
                 useMaterial3: true,
               ),
               home: const HomePage(),
@@ -108,8 +108,7 @@ class _HomePageState extends State<HomePage> {
               icon: Icon(Icons.add_circle_outline), label: 'Counter'),
           NavigationDestination(
               icon: Icon(Icons.settings_outlined), label: 'Settings'),
-          NavigationDestination(
-              icon: Icon(Icons.info_outline), label: 'About'),
+          NavigationDestination(icon: Icon(Icons.info_outline), label: 'About'),
         ],
       ),
     );
@@ -150,8 +149,8 @@ class CounterPage extends StatelessWidget {
                   builder: (context, histState) {
                     return Text(
                       '${histState.milestones.length} milestones recorded (every 5)',
-                      style: TextStyle(
-                          fontSize: 12, color: cs.onSurfaceVariant),
+                      style:
+                          TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                     );
                   },
                 ),
@@ -188,8 +187,7 @@ class CounterPage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     OutlinedButton.icon(
-                      onPressed: () =>
-                          context.read<CounterBloc>().add(Reset()),
+                      onPressed: () => context.read<CounterBloc>().add(Reset()),
                       icon: const Icon(Icons.refresh, size: 16),
                       label: const Text('Reset counter'),
                     ),
@@ -221,15 +219,13 @@ class SettingsPage extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text('Settings',
-                style: Theme.of(context).textTheme.titleLarge),
+            Text('Settings', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 4),
             Text('Change settings and watch the Diff view in DevTools',
                 style: TextStyle(
                     fontSize: 12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant)),
             const SizedBox(height: 24),
-
             ListTile(
               leading: const Icon(Icons.text_fields),
               title: const Text('Font size'),
@@ -239,12 +235,10 @@ class SettingsPage extends StatelessWidget {
                 max: 24,
                 divisions: 14,
                 label: '${settings.fontSize.round()}px',
-                onChanged: (v) =>
-                    context.read<SettingsCubit>().setFontSize(v),
+                onChanged: (v) => context.read<SettingsCubit>().setFontSize(v),
               ),
               trailing: Text('${settings.fontSize.round()}px'),
             ),
-
             ListTile(
               leading: const Icon(Icons.language),
               title: const Text('Language'),
@@ -261,32 +255,24 @@ class SettingsPage extends StatelessWidget {
                 },
               ),
             ),
-
             SwitchListTile(
               secondary: const Icon(Icons.notifications_outlined),
               title: const Text('Notifications'),
-              subtitle: Text(settings.notificationsEnabled
-                  ? 'Enabled'
-                  : 'Disabled'),
+              subtitle:
+                  Text(settings.notificationsEnabled ? 'Enabled' : 'Disabled'),
               value: settings.notificationsEnabled,
               onChanged: (_) =>
                   context.read<SettingsCubit>().toggleNotifications(),
             ),
-
             SwitchListTile(
               secondary: const Icon(Icons.save_outlined),
               title: const Text('Auto-save'),
-              subtitle:
-              Text(settings.autoSave ? 'Enabled' : 'Disabled'),
+              subtitle: Text(settings.autoSave ? 'Enabled' : 'Disabled'),
               value: settings.autoSave,
-              onChanged: (_) =>
-                  context.read<SettingsCubit>().toggleAutoSave(),
+              onChanged: (_) => context.read<SettingsCubit>().toggleAutoSave(),
             ),
-
             const Divider(height: 32),
-
-            Text('Theme color',
-                style: Theme.of(context).textTheme.titleMedium),
+            Text('Theme color', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             BlocBuilder<ThemeCubit, ThemeState>(
               builder: (context, theme) {
@@ -312,15 +298,14 @@ class SettingsPage extends StatelessWidget {
                           shape: BoxShape.circle,
                           border: selected
                               ? Border.all(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface,
-                              width: 3)
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                  width: 3)
                               : null,
                         ),
                         child: selected
                             ? const Icon(Icons.check,
-                            color: Colors.white, size: 20)
+                                color: Colors.white, size: 20)
                             : null,
                       ),
                     );
@@ -344,8 +329,7 @@ class AboutPage extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('About this demo',
-            style: Theme.of(context).textTheme.titleLarge),
+        Text('About this demo', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 16),
         _card(
           context,
@@ -380,24 +364,26 @@ class AboutPage extends StatelessWidget {
               'Best for testing the Diff view — change one field at a time.',
         ),
         const SizedBox(height: 16),
-        Text('Try this:',
-            style: Theme.of(context).textTheme.titleMedium),
+        Text('Try this:', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         _step('1. Tap +5 on the counter 3 times to trigger milestones'),
-        _step('2. Open DevTools → Graph tab to see the CounterBloc→HistoryBloc edge'),
+        _step(
+            '2. Open DevTools → Graph tab to see the CounterBloc→HistoryBloc edge'),
         _step('3. Go to Settings, change language and toggle notifications'),
-        _step('4. Open DevTools → History tab, select the last entry, tap Diff'),
+        _step(
+            '4. Open DevTools → History tab, select the last entry, tap Diff'),
         _step('5. Check the Perf tab to see processing times per BLoC'),
-        _step('6. Tap Replay on any entry to push that state onto the live BLoC'),
+        _step(
+            '6. Tap Replay on any entry to push that state onto the live BLoC'),
       ],
     );
   }
 
   Widget _card(BuildContext context,
       {required IconData icon,
-        required Color color,
-        required String title,
-        required String subtitle}) {
+      required Color color,
+      required String title,
+      required String subtitle}) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -419,8 +405,7 @@ class AboutPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('→ ', style: TextStyle(fontWeight: FontWeight.w600)),
-          Expanded(
-              child: Text(text, style: const TextStyle(fontSize: 13))),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 13))),
         ],
       ),
     );

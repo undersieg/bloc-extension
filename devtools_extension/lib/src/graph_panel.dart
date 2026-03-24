@@ -19,9 +19,8 @@ class _GraphPanelState extends State<GraphPanel> {
   bool _showCubits = true;
   String? _draggingType;
 
-  List<Map<String, dynamic>> get _allAlive =>
-      List<Map<String, dynamic>>.from(
-          (widget.data?['aliveBlocs'] as List?) ?? []);
+  List<Map<String, dynamic>> get _allAlive => List<Map<String, dynamic>>.from(
+      (widget.data?['aliveBlocs'] as List?) ?? []);
 
   List<Map<String, dynamic>> get _filtered {
     var list = _allAlive.toList();
@@ -34,16 +33,15 @@ class _GraphPanelState extends State<GraphPanel> {
     final q = _search.text.trim().toLowerCase();
     if (q.isNotEmpty) {
       list = list
-          .where((b) =>
-          (b['blocType'] as String? ?? '').toLowerCase().contains(q))
+          .where(
+              (b) => (b['blocType'] as String? ?? '').toLowerCase().contains(q))
           .toList();
     }
     return list;
   }
 
-  List<Map<String, dynamic>> get _rels =>
-      List<Map<String, dynamic>>.from(
-          (widget.data?['relationships'] as List?) ?? []);
+  List<Map<String, dynamic>> get _rels => List<Map<String, dynamic>>.from(
+      (widget.data?['relationships'] as List?) ?? []);
 
   @override
   void initState() {
@@ -59,8 +57,7 @@ class _GraphPanelState extends State<GraphPanel> {
 
   void _ensurePositions(List<Map<String, dynamic>> alive, Size size) {
     if (size == Size.zero) return;
-    _positions.removeWhere(
-            (key, _) => !alive.any((b) => b['blocType'] == key));
+    _positions.removeWhere((key, _) => !alive.any((b) => b['blocType'] == key));
 
     final cx = size.width / 2;
     final cy = size.height / 2;
@@ -103,20 +100,20 @@ class _GraphPanelState extends State<GraphPanel> {
                   decoration: InputDecoration(
                     hintText: 'Search by name...',
                     hintStyle:
-                    TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                    prefixIcon: Icon(Icons.search, size: 16,
-                        color: cs.onSurfaceVariant),
+                        TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                    prefixIcon: Icon(Icons.search,
+                        size: 16, color: cs.onSurfaceVariant),
                     suffixIcon: _search.text.isNotEmpty
                         ? IconButton(
-                      icon: Icon(Icons.clear, size: 14,
-                          color: cs.onSurfaceVariant),
-                      onPressed: () => _search.clear(),
-                      padding: EdgeInsets.zero,
-                    )
+                            icon: Icon(Icons.clear,
+                                size: 14, color: cs.onSurfaceVariant),
+                            onPressed: () => _search.clear(),
+                            padding: EdgeInsets.zero,
+                          )
                         : null,
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 6),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(color: cs.outlineVariant),
@@ -132,15 +129,14 @@ class _GraphPanelState extends State<GraphPanel> {
               Row(
                 children: [
                   _ToggleChip('Bloc', Colors.blue, _showBlocs,
-                          () => setState(() => _showBlocs = !_showBlocs)),
+                      () => setState(() => _showBlocs = !_showBlocs)),
                   const SizedBox(width: 6),
                   _ToggleChip('Cubit', Colors.teal, _showCubits,
-                          () => setState(() => _showCubits = !_showCubits)),
+                      () => setState(() => _showCubits = !_showCubits)),
                   const Spacer(),
                   Text(
                     '${alive.length}/${_allAlive.length} shown · drag to move',
-                    style: TextStyle(
-                        fontSize: 10, color: cs.onSurfaceVariant),
+                    style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
                   ),
                   const SizedBox(width: 4),
                   IconButton(
@@ -150,7 +146,7 @@ class _GraphPanelState extends State<GraphPanel> {
                     visualDensity: VisualDensity.compact,
                     padding: const EdgeInsets.all(4),
                     constraints:
-                    const BoxConstraints(minWidth: 28, minHeight: 28),
+                        const BoxConstraints(minWidth: 28, minHeight: 28),
                   ),
                 ],
               ),
@@ -160,60 +156,57 @@ class _GraphPanelState extends State<GraphPanel> {
         Expanded(
           child: alive.isEmpty
               ? Center(
-            child: Text(
-              _allAlive.isEmpty
-                  ? 'No active BLoCs/Cubits.'
-                  : 'No matches.',
-              style: TextStyle(color: cs.onSurfaceVariant),
-            ),
-          )
+                  child: Text(
+                    _allAlive.isEmpty
+                        ? 'No active BLoCs/Cubits.'
+                        : 'No matches.',
+                    style: TextStyle(color: cs.onSurfaceVariant),
+                  ),
+                )
               : LayoutBuilder(
-            builder: (context, constraints) {
-              final size = Size(
-                  constraints.maxWidth, constraints.maxHeight);
-              _ensurePositions(alive, size);
+                  builder: (context, constraints) {
+                    final size =
+                        Size(constraints.maxWidth, constraints.maxHeight);
+                    _ensurePositions(alive, size);
 
-              return Listener(
-                behavior: HitTestBehavior.translucent,
-                onPointerMove: (event) {
-                  if (_draggingType == null) return;
-                  if (!_positions.containsKey(_draggingType)) return;
-                  setState(() {
-                    final old = _positions[_draggingType]!;
-                    _positions[_draggingType!] = Offset(
-                      (old.dx + event.delta.dx)
-                          .clamp(0, size.width),
-                      (old.dy + event.delta.dy)
-                          .clamp(0, size.height),
+                    return Listener(
+                      behavior: HitTestBehavior.translucent,
+                      onPointerMove: (event) {
+                        if (_draggingType == null) return;
+                        if (!_positions.containsKey(_draggingType)) return;
+                        setState(() {
+                          final old = _positions[_draggingType]!;
+                          _positions[_draggingType!] = Offset(
+                            (old.dx + event.delta.dx).clamp(0, size.width),
+                            (old.dy + event.delta.dy).clamp(0, size.height),
+                          );
+                        });
+                      },
+                      onPointerUp: (_) => _draggingType = null,
+                      onPointerCancel: (_) => _draggingType = null,
+                      child: CustomPaint(
+                        size: size,
+                        painter: _EdgePainter(
+                          positions: _positions,
+                          relationships: rels,
+                        ),
+                        child: Stack(
+                          children: [
+                            for (final b in alive)
+                              if (_positions
+                                  .containsKey(b['blocType'] as String))
+                                _buildNode(b, size),
+                          ],
+                        ),
+                      ),
                     );
-                  });
-                },
-                onPointerUp: (_) => _draggingType = null,
-                onPointerCancel: (_) => _draggingType = null,
-                child: CustomPaint(
-                  size: size,
-                  painter: _EdgePainter(
-                    positions: _positions,
-                    relationships: rels,
-                  ),
-                  child: Stack(
-                    children: [
-                      for (final b in alive)
-                        if (_positions
-                            .containsKey(b['blocType'] as String))
-                          _buildNode(b, size),
-                    ],
-                  ),
+                  },
                 ),
-              );
-            },
-          ),
         ),
         Container(
           height: 120,
           decoration: BoxDecoration(
-            border: Border(
-                top: BorderSide(color: cs.outlineVariant)),
+            border: Border(top: BorderSide(color: cs.outlineVariant)),
           ),
           child: ListView(
             padding: const EdgeInsets.all(8),
@@ -224,11 +217,12 @@ class _GraphPanelState extends State<GraphPanel> {
                   child: Row(
                     children: [
                       Container(
-                        width: 8, height: 8,
+                        width: 8,
+                        height: 8,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: b['isBloc'] == true
-                              ? Colors.blue : Colors.teal,
+                          color:
+                              b['isBloc'] == true ? Colors.blue : Colors.teal,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -243,8 +237,8 @@ class _GraphPanelState extends State<GraphPanel> {
                         (b['avgProcessingUs'] as int? ?? 0) > 0
                             ? '${((b['avgProcessingUs'] as int) / 1000).toStringAsFixed(1)}ms'
                             : '–',
-                        style: const TextStyle(
-                            fontSize: 10, color: Colors.grey),
+                        style:
+                            const TextStyle(fontSize: 10, color: Colors.grey),
                       ),
                     ],
                   ),
@@ -272,13 +266,11 @@ class _GraphPanelState extends State<GraphPanel> {
           cursor: SystemMouseCursors.grab,
           child: Container(
             width: 100,
-            padding:
-            const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                  color: color.withValues(alpha: 0.4), width: 1),
+              border: Border.all(color: color.withValues(alpha: 0.4), width: 1),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -292,8 +284,7 @@ class _GraphPanelState extends State<GraphPanel> {
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center),
                 Text('${b['transitionCount']} states',
-                    style:
-                    const TextStyle(fontSize: 8, color: Colors.grey)),
+                    style: const TextStyle(fontSize: 8, color: Colors.grey)),
               ],
             ),
           ),
@@ -326,8 +317,8 @@ class _EdgePainter extends CustomPainter {
       canvas.drawLine(from, to, paint);
 
       final angle = math.atan2(to.dy - from.dy, to.dx - from.dx);
-      final stop = Offset(
-          to.dx - 50 * math.cos(angle), to.dy - 50 * math.sin(angle));
+      final stop =
+          Offset(to.dx - 50 * math.cos(angle), to.dy - 50 * math.sin(angle));
       final p1 = Offset(stop.dx - 8 * math.cos(angle - 0.5),
           stop.dy - 8 * math.sin(angle - 0.5));
       final p2 = Offset(stop.dx - 8 * math.cos(angle + 0.5),
@@ -391,7 +382,8 @@ class _ToggleChip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-                width: 8, height: 8,
+                width: 8,
+                height: 8,
                 decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: active ? color : Colors.grey)),

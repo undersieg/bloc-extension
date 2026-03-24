@@ -43,7 +43,7 @@ class CounterBloc extends Bloc<CounterEvent, CounterState> {
     on<Decrement>((event, emit) => emit(CounterState(count: state.count - 1)));
     on<Reset>((event, emit) => emit(const CounterState(count: 0)));
     on<IncrementBy>(
-            (event, emit) => emit(CounterState(count: state.count + event.amount)));
+        (event, emit) => emit(CounterState(count: state.count + event.amount)));
   }
 }
 
@@ -57,9 +57,9 @@ class ThemeState {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is ThemeState &&
-              other.isDark == isDark &&
-              other.seedColor == seedColor;
+      other is ThemeState &&
+          other.isDark == isDark &&
+          other.seedColor == seedColor;
   @override
   int get hashCode => Object.hash(isDark, seedColor);
 }
@@ -67,8 +67,8 @@ class ThemeState {
 class ThemeCubit extends Cubit<ThemeState> {
   ThemeCubit() : super(const ThemeState(isDark: false));
 
-  void toggleTheme() => emit(ThemeState(
-      isDark: !state.isDark, seedColor: state.seedColor));
+  void toggleTheme() =>
+      emit(ThemeState(isDark: !state.isDark, seedColor: state.seedColor));
 
   void setSeedColor(String color) =>
       emit(ThemeState(isDark: state.isDark, seedColor: color));
@@ -94,10 +94,10 @@ class HistoryState {
   final DateTime? lastRecorded;
 
   Map<String, dynamic> toJson() => {
-    'milestones': milestones,
-    'count': milestones.length,
-    'lastRecorded': lastRecorded?.toIso8601String(),
-  };
+        'milestones': milestones,
+        'count': milestones.length,
+        'lastRecorded': lastRecorded?.toIso8601String(),
+      };
 
   @override
   String toString() => 'HistoryState(${milestones.length} milestones)';
@@ -105,8 +105,7 @@ class HistoryState {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is HistoryState &&
-              other.milestones.length == milestones.length;
+      other is HistoryState && other.milestones.length == milestones.length;
   @override
   int get hashCode => milestones.length.hashCode;
 }
@@ -153,11 +152,11 @@ class SettingsState {
       );
 
   Map<String, dynamic> toJson() => {
-    'fontSize': fontSize,
-    'language': language,
-    'notificationsEnabled': notificationsEnabled,
-    'autoSave': autoSave,
-  };
+        'fontSize': fontSize,
+        'language': language,
+        'notificationsEnabled': notificationsEnabled,
+        'autoSave': autoSave,
+      };
 
   @override
   String toString() => 'SettingsState($language, ${fontSize}px)';
@@ -165,11 +164,11 @@ class SettingsState {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is SettingsState &&
-              other.fontSize == fontSize &&
-              other.language == language &&
-              other.notificationsEnabled == notificationsEnabled &&
-              other.autoSave == autoSave;
+      other is SettingsState &&
+          other.fontSize == fontSize &&
+          other.language == language &&
+          other.notificationsEnabled == notificationsEnabled &&
+          other.autoSave == autoSave;
 
   @override
   int get hashCode =>

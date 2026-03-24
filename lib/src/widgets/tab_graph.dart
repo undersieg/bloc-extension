@@ -62,9 +62,7 @@ class _GraphTabState extends State<GraphTab>
     if (!_showCubits) list = list.where((r) => r.isBloc).toList();
     final q = _search.text.trim().toLowerCase();
     if (q.isNotEmpty) {
-      list = list
-          .where((r) => r.blocType.toLowerCase().contains(q))
-          .toList();
+      list = list.where((r) => r.blocType.toLowerCase().contains(q)).toList();
     }
     return list;
   }
@@ -80,8 +78,7 @@ class _GraphTabState extends State<GraphTab>
 
   void _ensurePositions(List<BlocLifecycleRecord> alive, Size size) {
     if (size == Size.zero) return;
-    _positions.removeWhere(
-            (key, _) => !alive.any((r) => r.blocType == key));
+    _positions.removeWhere((key, _) => !alive.any((r) => r.blocType == key));
     final cx = size.width / 2;
     final cy = size.height / 2;
     final radius = math.min(cx, cy) * 0.5;
@@ -112,68 +109,67 @@ class _GraphTabState extends State<GraphTab>
         Expanded(
           child: alive.isEmpty
               ? Center(
-            child: Text(
-              _allAlive.isEmpty
-                  ? 'No active BLoCs/Cubits.'
-                  : 'No matches for "${_search.text}"',
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: cs.onSurfaceVariant),
-            ),
-          )
-              : LayoutBuilder(
-            builder: (context, constraints) {
-              final size =
-              Size(constraints.maxWidth, constraints.maxHeight);
-              _ensurePositions(alive, size);
-              // GestureDetector claims pan gestures in the arena,
-              // preventing the Drawer from interpreting them as
-              // a close swipe. Listener handles the actual movement.
-              return GestureDetector(
-                onPanStart: (_) {},
-                onPanUpdate: (_) {},
-                onPanEnd: (_) {},
-                onTap: () =>
-                    setState(() => _selectedType = null),
-                child: Listener(
-                  behavior: HitTestBehavior.translucent,
-                  onPointerMove: (event) {
-                    if (_draggingId == null) return;
-                    final type = alive
-                        .where((r) => r.instanceId == _draggingId)
-                        .map((r) => r.blocType)
-                        .firstOrNull;
-                    if (type == null ||
-                        !_positions.containsKey(type)) return;
-                    setState(() {
-                      final old = _positions[type]!;
-                      _positions[type] = Offset(
-                        (old.dx + event.delta.dx).clamp(0, size.width),
-                        (old.dy + event.delta.dy).clamp(0, size.height),
-                      );
-                    });
-                  },
-                  onPointerUp: (_) => _draggingId = null,
-                  child: CustomPaint(
-                    size: size,
-                    painter: _EdgePainter(
-                      positions: _positions,
-                      relationships: _s.relationships,
-                      colorScheme: cs,
-                      textDirection: Directionality.of(context),
-                      selectedType: _selectedType,
-                    ),
-                    child: Stack(
-                      children: [
-                        for (final r in alive)
-                          if (_positions.containsKey(r.blocType))
-                            _buildNode(r, cs, size),
-                      ],
-                    ),
+                  child: Text(
+                    _allAlive.isEmpty
+                        ? 'No active BLoCs/Cubits.'
+                        : 'No matches for "${_search.text}"',
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: cs.onSurfaceVariant),
                   ),
+                )
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final size =
+                        Size(constraints.maxWidth, constraints.maxHeight);
+                    _ensurePositions(alive, size);
+                    // GestureDetector claims pan gestures in the arena,
+                    // preventing the Drawer from interpreting them as
+                    // a close swipe. Listener handles the actual movement.
+                    return GestureDetector(
+                      onPanStart: (_) {},
+                      onPanUpdate: (_) {},
+                      onPanEnd: (_) {},
+                      onTap: () => setState(() => _selectedType = null),
+                      child: Listener(
+                        behavior: HitTestBehavior.translucent,
+                        onPointerMove: (event) {
+                          if (_draggingId == null) return;
+                          final type = alive
+                              .where((r) => r.instanceId == _draggingId)
+                              .map((r) => r.blocType)
+                              .firstOrNull;
+                          if (type == null || !_positions.containsKey(type))
+                            return;
+                          setState(() {
+                            final old = _positions[type]!;
+                            _positions[type] = Offset(
+                              (old.dx + event.delta.dx).clamp(0, size.width),
+                              (old.dy + event.delta.dy).clamp(0, size.height),
+                            );
+                          });
+                        },
+                        onPointerUp: (_) => _draggingId = null,
+                        child: CustomPaint(
+                          size: size,
+                          painter: _EdgePainter(
+                            positions: _positions,
+                            relationships: _s.relationships,
+                            colorScheme: cs,
+                            textDirection: Directionality.of(context),
+                            selectedType: _selectedType,
+                          ),
+                          child: Stack(
+                            children: [
+                              for (final r in alive)
+                                if (_positions.containsKey(r.blocType))
+                                  _buildNode(r, cs, size),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
         _buildDetailPanel(cs),
       ],
@@ -195,21 +191,20 @@ class _GraphTabState extends State<GraphTab>
               style: const TextStyle(fontSize: 12),
               decoration: InputDecoration(
                 hintText: 'Search by name...',
-                hintStyle:
-                TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                prefixIcon: Icon(Icons.search, size: 16,
-                    color: cs.onSurfaceVariant),
+                hintStyle: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                prefixIcon:
+                    Icon(Icons.search, size: 16, color: cs.onSurfaceVariant),
                 suffixIcon: _search.text.isNotEmpty
                     ? IconButton(
-                  icon: Icon(Icons.clear, size: 14,
-                      color: cs.onSurfaceVariant),
-                  onPressed: () => _search.clear(),
-                  padding: EdgeInsets.zero,
-                )
+                        icon: Icon(Icons.clear,
+                            size: 14, color: cs.onSurfaceVariant),
+                        onPressed: () => _search.clear(),
+                        padding: EdgeInsets.zero,
+                      )
                     : null,
                 isDense: true,
                 contentPadding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(color: cs.outlineVariant)),
@@ -223,14 +218,13 @@ class _GraphTabState extends State<GraphTab>
           Row(
             children: [
               _Toggle('Bloc', cs.primary, _showBlocs,
-                      () => setState(() => _showBlocs = !_showBlocs)),
+                  () => setState(() => _showBlocs = !_showBlocs)),
               const SizedBox(width: 6),
               _Toggle('Cubit', cs.tertiary, _showCubits,
-                      () => setState(() => _showCubits = !_showCubits)),
+                  () => setState(() => _showCubits = !_showCubits)),
               const Spacer(),
               Text('${_filtered.length}/${_allAlive.length}',
-                  style: TextStyle(
-                      fontSize: 10, color: cs.onSurfaceVariant)),
+                  style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
               const SizedBox(width: 4),
               IconButton(
                 icon: const Icon(Icons.auto_fix_high, size: 14),
@@ -238,8 +232,7 @@ class _GraphTabState extends State<GraphTab>
                 onPressed: () => setState(() => _positions.clear()),
                 visualDensity: VisualDensity.compact,
                 padding: const EdgeInsets.all(4),
-                constraints:
-                const BoxConstraints(minWidth: 28, minHeight: 28),
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
               ),
             ],
           ),
@@ -248,8 +241,7 @@ class _GraphTabState extends State<GraphTab>
     );
   }
 
-  Widget _buildNode(
-      BlocLifecycleRecord r, ColorScheme cs, Size canvasSize) {
+  Widget _buildNode(BlocLifecycleRecord r, ColorScheme cs, Size canvasSize) {
     final pos = _positions[r.blocType]!;
     final color = r.isBloc ? cs.primary : cs.tertiary;
     final isSel = _selectedType == r.blocType;
@@ -267,8 +259,7 @@ class _GraphTabState extends State<GraphTab>
           cursor: SystemMouseCursors.grab,
           child: Container(
             width: 104,
-            padding:
-            const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             decoration: BoxDecoration(
               color: color.withValues(alpha: isSel ? 0.25 : 0.12),
               borderRadius: BorderRadius.circular(10),
@@ -290,8 +281,7 @@ class _GraphTabState extends State<GraphTab>
                     textAlign: TextAlign.center),
                 const SizedBox(height: 2),
                 Text('${r.transitionCount} states',
-                    style: TextStyle(
-                        fontSize: 8, color: cs.onSurfaceVariant)),
+                    style: TextStyle(fontSize: 8, color: cs.onSurfaceVariant)),
               ],
             ),
           ),
@@ -314,70 +304,66 @@ class _GraphTabState extends State<GraphTab>
       ),
       child: sel == null
           ? Center(
-          child: Text('Tap a node to see details',
-              style: TextStyle(
-                  fontSize: 11, color: cs.onSurfaceVariant)))
+              child: Text('Tap a node to see details',
+                  style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)))
           : SingleChildScrollView(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: sel.isBloc ? cs.primary : cs.tertiary,
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: sel.isBloc ? cs.primary : cs.tertiary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(sel.blocType,
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w600),
+                            overflow: TextOverflow.ellipsis),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: (sel.isBloc ? cs.primary : cs.tertiary)
+                              .withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(sel.isBloc ? 'Bloc' : 'Cubit',
+                            style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                                color: sel.isBloc ? cs.primary : cs.tertiary)),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(sel.blocType,
-                      style: const TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w600),
-                      overflow: TextOverflow.ellipsis),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: (sel.isBloc ? cs.primary : cs.tertiary)
-                        .withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(sel.isBloc ? 'Bloc' : 'Cubit',
-                      style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: sel.isBloc
-                              ? cs.primary
-                              : cs.tertiary)),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  _detailRow('Transitions', '${sel.transitionCount}', cs),
+                  _detailRow('Alive for', _fmtDur(sel.lifetime), cs),
+                  _detailRow(
+                      'Avg processing',
+                      sel.avgProcessingTime.inMicroseconds > 0
+                          ? '${(sel.avgProcessingTime.inMicroseconds / 1000).toStringAsFixed(1)}ms'
+                          : '–',
+                      cs),
+                  _detailRow(
+                      'Connected to',
+                      _connectedTo(sel.blocType).isEmpty
+                          ? 'none detected'
+                          : _connectedTo(sel.blocType).join(', '),
+                      cs),
+                ],
+              ),
             ),
-            const SizedBox(height: 6),
-            _detailRow('Transitions', '${sel.transitionCount}', cs),
-            _detailRow('Alive for',
-                _fmtDur(sel.lifetime), cs),
-            _detailRow(
-                'Avg processing',
-                sel.avgProcessingTime.inMicroseconds > 0
-                    ? '${(sel.avgProcessingTime.inMicroseconds / 1000).toStringAsFixed(1)}ms'
-                    : '–',
-                cs),
-            _detailRow(
-                'Connected to',
-                _connectedTo(sel.blocType).isEmpty
-                    ? 'none detected'
-                    : _connectedTo(sel.blocType).join(', '),
-                cs),
-          ],
-        ),
-      ),
     );
   }
 
@@ -389,13 +375,12 @@ class _GraphTabState extends State<GraphTab>
           SizedBox(
             width: 100,
             child: Text(label,
-                style: TextStyle(
-                    fontSize: 10, color: cs.onSurfaceVariant)),
+                style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
           ),
           Expanded(
             child: Text(value,
-                style: const TextStyle(
-                    fontSize: 10, fontWeight: FontWeight.w500),
+                style:
+                    const TextStyle(fontSize: 10, fontWeight: FontWeight.w500),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis),
           ),
@@ -453,17 +438,14 @@ class _EdgePainter extends CustomPainter {
       paint
         ..color = isHighlighted
             ? colorScheme.primary.withValues(alpha: 0.7)
-            : colorScheme.outline
-            .withValues(alpha: 0.2 + rel.strength * 0.3)
-        ..strokeWidth = isHighlighted
-            ? 2.5
-            : 1.0 + rel.strength * 2.0;
+            : colorScheme.outline.withValues(alpha: 0.2 + rel.strength * 0.3)
+        ..strokeWidth = isHighlighted ? 2.5 : 1.0 + rel.strength * 2.0;
 
       canvas.drawLine(from, to, paint);
 
       final angle = math.atan2(to.dy - from.dy, to.dx - from.dx);
-      final stop = Offset(
-          to.dx - 52 * math.cos(angle), to.dy - 52 * math.sin(angle));
+      final stop =
+          Offset(to.dx - 52 * math.cos(angle), to.dy - 52 * math.sin(angle));
       final p1 = Offset(stop.dx - 8 * math.cos(angle - 0.5),
           stop.dy - 8 * math.sin(angle - 0.5));
       final p2 = Offset(stop.dx - 8 * math.cos(angle + 0.5),
@@ -516,15 +498,14 @@ class _Toggle extends StatelessWidget {
           color: active ? color.withValues(alpha: 0.15) : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-              color: active
-                  ? color.withValues(alpha: 0.5)
-                  : cs.outlineVariant),
+              color: active ? color.withValues(alpha: 0.5) : cs.outlineVariant),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-                width: 8, height: 8,
+                width: 8,
+                height: 8,
                 decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: active ? color : Colors.grey)),

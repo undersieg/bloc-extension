@@ -15,18 +15,18 @@ class PerformancePanel extends StatelessWidget {
     final avgUs = data!['avgProcessingUs'] as int? ?? 0;
     final count = data!['measuredCount'] as int? ?? 0;
     final slowest = data!['slowest'] as Map<String, dynamic>?;
-    final perBloc = List<Map<String, dynamic>>.from(
-        (data!['perBloc'] as List?) ?? []);
-    final slowestList = List<Map<String, dynamic>>.from(
-        (data!['slowestList'] as List?) ?? []);
+    final perBloc =
+        List<Map<String, dynamic>>.from((data!['perBloc'] as List?) ?? []);
+    final slowestList =
+        List<Map<String, dynamic>>.from((data!['slowestList'] as List?) ?? []);
 
     if (count == 0 && perBloc.isEmpty) {
       return const Center(
         child: Text(
           'No performance data yet.\n'
-              'Timing is measured for Bloc transitions\n'
-              '(event dispatch → state emission).\n'
-              'Cubits appear in the breakdown once they emit.',
+          'Timing is measured for Bloc transitions\n'
+          '(event dispatch → state emission).\n'
+          'Cubits appear in the breakdown once they emit.',
           textAlign: TextAlign.center,
         ),
       );
@@ -37,8 +37,7 @@ class PerformancePanel extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(
-                child: _Card('Average', _fmtUs(avgUs), _perfColor(avgUs))),
+            Expanded(child: _Card('Average', _fmtUs(avgUs), _perfColor(avgUs))),
             const SizedBox(width: 8),
             Expanded(child: _Card('Measured', '$count', Colors.blue)),
             const SizedBox(width: 8),
@@ -51,7 +50,6 @@ class PerformancePanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 20),
-
         if (perBloc.isNotEmpty) ...[
           const Text('Per-BLoC breakdown',
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
@@ -59,7 +57,6 @@ class PerformancePanel extends StatelessWidget {
           for (final b in perBloc) _BlocBar(bloc: b, maxUs: _maxAvg(perBloc)),
           const SizedBox(height: 20),
         ],
-
         if (slowestList.isNotEmpty) ...[
           const Text('Slowest transitions',
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
@@ -104,8 +101,7 @@ class _Card extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         children: [
@@ -113,8 +109,7 @@ class _Card extends StatelessWidget {
               style: TextStyle(
                   fontSize: 16, fontWeight: FontWeight.w700, color: color)),
           const SizedBox(height: 2),
-          Text(label,
-              style: const TextStyle(fontSize: 10, color: Colors.grey)),
+          Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
         ],
       ),
     );
@@ -213,8 +208,7 @@ class _SlowestRow extends StatelessWidget {
                     fontWeight: FontWeight.w600)),
           ),
           Container(
-            padding:
-            const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
             decoration: BoxDecoration(
               color: _perfColor(procUs).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(4),

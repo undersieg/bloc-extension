@@ -81,13 +81,13 @@ class _ExtensionBodyState extends State<_ExtensionBody> {
 
     try {
       final summaryResp =
-      await serviceManager.callServiceExtensionOnMainIsolate(
+          await serviceManager.callServiceExtensionOnMainIsolate(
         'ext.bloc_devtools.getState',
       );
       _summary = summaryResp.json ?? {};
 
       final entriesResp =
-      await serviceManager.callServiceExtensionOnMainIsolate(
+          await serviceManager.callServiceExtensionOnMainIsolate(
         'ext.bloc_devtools.getEntries',
         args: {'sinceIndex': '0'},
       );
@@ -96,14 +96,12 @@ class _ExtensionBodyState extends State<_ExtensionBody> {
           (entriesJson['entries'] as List?) ?? []);
       _lastFetchedIndex = entriesJson['totalCount'] as int? ?? 0;
 
-      final graphResp =
-      await serviceManager.callServiceExtensionOnMainIsolate(
+      final graphResp = await serviceManager.callServiceExtensionOnMainIsolate(
         'ext.bloc_devtools.getGraph',
       );
       _graphData = graphResp.json;
 
-      final perfResp =
-      await serviceManager.callServiceExtensionOnMainIsolate(
+      final perfResp = await serviceManager.callServiceExtensionOnMainIsolate(
         'ext.bloc_devtools.getPerformance',
       );
       _perfData = perfResp.json;
@@ -121,7 +119,7 @@ class _ExtensionBodyState extends State<_ExtensionBody> {
   Future<void> _fetchIncremental() async {
     try {
       final entriesResp =
-      await serviceManager.callServiceExtensionOnMainIsolate(
+          await serviceManager.callServiceExtensionOnMainIsolate(
         'ext.bloc_devtools.getEntries',
         args: {'sinceIndex': '$_lastFetchedIndex'},
       );
@@ -135,19 +133,18 @@ class _ExtensionBodyState extends State<_ExtensionBody> {
         _lastFetchedIndex = totalCount;
 
         final graphResp =
-        await serviceManager.callServiceExtensionOnMainIsolate(
+            await serviceManager.callServiceExtensionOnMainIsolate(
           'ext.bloc_devtools.getGraph',
         );
         _graphData = graphResp.json;
 
-        final perfResp =
-        await serviceManager.callServiceExtensionOnMainIsolate(
+        final perfResp = await serviceManager.callServiceExtensionOnMainIsolate(
           'ext.bloc_devtools.getPerformance',
         );
         _perfData = perfResp.json;
 
         final summaryResp =
-        await serviceManager.callServiceExtensionOnMainIsolate(
+            await serviceManager.callServiceExtensionOnMainIsolate(
           'ext.bloc_devtools.getState',
         );
         _summary = summaryResp.json;

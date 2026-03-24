@@ -32,14 +32,12 @@ class BlocLifecycleRecord {
   bool get isAlive => closedAt == null;
 
   /// How long this instance has been alive (or was alive).
-  Duration get lifetime =>
-      (closedAt ?? DateTime.now()).difference(createdAt);
+  Duration get lifetime => (closedAt ?? DateTime.now()).difference(createdAt);
 
   /// Average processing time per transition.
   Duration get avgProcessingTime => transitionCount > 0
       ? Duration(
-      microseconds:
-      totalProcessingTime.inMicroseconds ~/ transitionCount)
+          microseconds: totalProcessingTime.inMicroseconds ~/ transitionCount)
       : Duration.zero;
 }
 
@@ -64,7 +62,8 @@ class BlocRelationship {
   int correlationCount = 0;
 
   /// Strength of the relationship (0.0–1.0), derived from correlation count.
-  double get strength => (correlationCount / (correlationCount + 3)).clamp(0.0, 1.0);
+  double get strength =>
+      (correlationCount / (correlationCount + 3)).clamp(0.0, 1.0);
 
   /// Unique key for deduplication.
   String get key => '$sourceBlocType→$targetBlocType';

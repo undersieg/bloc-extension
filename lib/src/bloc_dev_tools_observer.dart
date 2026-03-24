@@ -7,9 +7,9 @@ import 'dev_tools_store.dart';
 /// performance timing, and keeps live BLoC references for state replay.
 class BlocDevToolsObserver extends BlocObserver {
   BlocDevToolsObserver(
-      this.store, {
-        this.innerObserver,
-      });
+    this.store, {
+    this.innerObserver,
+  });
 
   final DevToolsStore store;
   final BlocObserver? innerObserver;
@@ -43,6 +43,7 @@ class BlocDevToolsObserver extends BlocObserver {
     store.addEntry(DevToolsEntry(
       blocType: bloc.runtimeType.toString(),
       state: bloc.state,
+      isBloc: isBloc,
       timestamp: DateTime.now(),
     ));
 
@@ -92,6 +93,7 @@ class BlocDevToolsObserver extends BlocObserver {
       state: transition.nextState,
       previousState: previousState,
       event: transition.event,
+      isBloc: true,
       timestamp: now,
       processingDuration: processing,
     ));

@@ -80,19 +80,19 @@ class _BlocDevToolsPanelState extends State<BlocDevToolsPanel>
                     icon: const Icon(Icons.restart_alt, size: 18),
                     tooltip: 'Reset all',
                     onPressed:
-                    widget.store.length > 0 ? widget.store.reset : null,
+                        widget.store.length > 0 ? widget.store.reset : null,
                     visualDensity: VisualDensity.compact,
                     padding: const EdgeInsets.all(4),
                     constraints:
-                    const BoxConstraints(minWidth: 32, minHeight: 32),
+                        const BoxConstraints(minWidth: 32, minHeight: 32),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
               TabBar(
                 controller: _tabController,
-                labelStyle: const TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w600),
+                labelStyle:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 unselectedLabelStyle: const TextStyle(fontSize: 12),
                 indicatorSize: TabBarIndicatorSize.label,
                 tabs: [
@@ -134,7 +134,6 @@ class _BlocDevToolsPanelState extends State<BlocDevToolsPanel>
             ],
           ),
         ),
-
         Expanded(
           child: TabBarView(
             controller: _tabController,

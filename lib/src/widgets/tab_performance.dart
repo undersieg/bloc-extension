@@ -58,17 +58,15 @@ class _PerformanceTabState extends State<PerformanceTab>
       return Center(
         child: Text(
           'No performance data yet.\n'
-              'Interact with your app to generate transitions.',
+          'Interact with your app to generate transitions.',
           textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium
-              ?.copyWith(color: cs.onSurfaceVariant),
+          style:
+              theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
         ),
       );
     }
 
-    final records = _s.lifecycles
-        .where((r) => r.transitionCount > 0)
-        .toList()
+    final records = _s.lifecycles.where((r) => r.transitionCount > 0).toList()
       ..sort((a, b) => b.transitionCount - a.transitionCount);
 
     final sorted = List<DevToolsEntry>.from(timed)
@@ -112,32 +110,27 @@ class _PerformanceTabState extends State<PerformanceTab>
     final avg = _s.avgProcessingTime;
     final slowest = _s.slowestTransition;
     final fastest = timed.isNotEmpty
-        ? timed.reduce((a, b) =>
-    a.processingDuration!.inMicroseconds <=
-        b.processingDuration!.inMicroseconds
-        ? a
-        : b)
+        ? timed.reduce((a, b) => a.processingDuration!.inMicroseconds <=
+                b.processingDuration!.inMicroseconds
+            ? a
+            : b)
         : null;
 
     return Row(
       children: [
         if (timed.isNotEmpty)
-          Expanded(
-              child: _Card('Avg', _fmtDur(avg), _perfColor(avg, cs), cs)),
+          Expanded(child: _Card('Avg', _fmtDur(avg), _perfColor(avg, cs), cs)),
         if (fastest != null) ...[
           const SizedBox(width: 8),
           Expanded(
-              child: _Card('Fastest',
-                  _fmtDur(fastest.processingDuration!), Colors.green, cs)),
+              child: _Card('Fastest', _fmtDur(fastest.processingDuration!),
+                  Colors.green, cs)),
         ],
         if (slowest != null) ...[
           const SizedBox(width: 8),
           Expanded(
-              child: _Card(
-                  'Slowest',
-                  _fmtDur(slowest.processingDuration!),
-                  _perfColor(slowest.processingDuration!, cs),
-                  cs)),
+              child: _Card('Slowest', _fmtDur(slowest.processingDuration!),
+                  _perfColor(slowest.processingDuration!, cs), cs)),
         ],
         const SizedBox(width: 8),
         Expanded(
@@ -150,8 +143,7 @@ class _PerformanceTabState extends State<PerformanceTab>
     );
   }
 
-  Widget _buildBlocBreakdown(
-      ColorScheme cs, List<dynamic> records) {
+  Widget _buildBlocBreakdown(ColorScheme cs, List<dynamic> records) {
     if (records.isEmpty) {
       return Text('No data yet.',
           style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant));
@@ -169,20 +161,19 @@ class _PerformanceTabState extends State<PerformanceTab>
             child: InkWell(
               borderRadius: BorderRadius.circular(6),
               onTap: () => setState(() {
-                _selectedBloc =
-                _selectedBloc == r.blocType ? null : r.blocType;
+                _selectedBloc = _selectedBloc == r.blocType ? null : r.blocType;
                 _selectedSlowestIdx = null;
               }),
               child: Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
                         Container(
-                          width: 8, height: 8,
+                          width: 8,
+                          height: 8,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: r.isBloc ? cs.primary : cs.tertiary,
@@ -192,8 +183,7 @@ class _PerformanceTabState extends State<PerformanceTab>
                         Expanded(
                           child: Text(r.blocType,
                               style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500)),
+                                  fontSize: 11, fontWeight: FontWeight.w500)),
                         ),
                         Text(
                           r.avgProcessingTime.inMicroseconds > 0
@@ -208,12 +198,10 @@ class _PerformanceTabState extends State<PerformanceTab>
                     ClipRRect(
                       borderRadius: BorderRadius.circular(2),
                       child: LinearProgressIndicator(
-                        value: maxCount > 0
-                            ? r.transitionCount / maxCount
-                            : 0,
+                        value: maxCount > 0 ? r.transitionCount / maxCount : 0,
                         minHeight: 4,
                         backgroundColor:
-                        cs.outlineVariant.withValues(alpha: 0.3),
+                            cs.outlineVariant.withValues(alpha: 0.3),
                         color: r.isBloc ? cs.primary : cs.tertiary,
                       ),
                     ),
@@ -245,13 +233,11 @@ class _PerformanceTabState extends State<PerformanceTab>
             child: InkWell(
               borderRadius: BorderRadius.circular(4),
               onTap: () => setState(() {
-                _selectedSlowestIdx =
-                _selectedSlowestIdx == i ? null : i;
+                _selectedSlowestIdx = _selectedSlowestIdx == i ? null : i;
                 _selectedBloc = null;
               }),
               child: Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
                 child: Row(
                   children: [
                     SizedBox(
@@ -266,8 +252,7 @@ class _PerformanceTabState extends State<PerformanceTab>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 5, vertical: 2),
                       decoration: BoxDecoration(
-                        color: _perfColor(
-                            top10[i].processingDuration!, cs)
+                        color: _perfColor(top10[i].processingDuration!, cs)
                             .withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(4),
                       ),
@@ -276,8 +261,7 @@ class _PerformanceTabState extends State<PerformanceTab>
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: _perfColor(
-                              top10[i].processingDuration!, cs),
+                          color: _perfColor(top10[i].processingDuration!, cs),
                         ),
                       ),
                     ),
@@ -285,8 +269,7 @@ class _PerformanceTabState extends State<PerformanceTab>
                     Expanded(
                       child: Text(
                         '${top10[i].blocType} ← ${top10[i].event ?? "?"}',
-                        style:
-                        TextStyle(fontSize: 10, color: cs.onSurface),
+                        style: TextStyle(fontSize: 10, color: cs.onSurface),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -308,8 +291,7 @@ class _PerformanceTabState extends State<PerformanceTab>
       if (r != null) return _blocDetail(cs, r);
     }
 
-    if (_selectedSlowestIdx != null &&
-        _selectedSlowestIdx! < top10.length) {
+    if (_selectedSlowestIdx != null && _selectedSlowestIdx! < top10.length) {
       return _transitionDetail(cs, top10[_selectedSlowestIdx!]);
     }
 
@@ -329,7 +311,8 @@ class _PerformanceTabState extends State<PerformanceTab>
           Row(
             children: [
               Container(
-                width: 10, height: 10,
+                width: 10,
+                height: 10,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: r.isBloc ? cs.primary : cs.tertiary,
@@ -344,8 +327,7 @@ class _PerformanceTabState extends State<PerformanceTab>
           const SizedBox(height: 12),
           _row('Type', r.isBloc ? 'Bloc' : 'Cubit', cs),
           _row('Transitions', '${r.transitionCount}', cs),
-          _row('Total time',
-              _fmtDur(r.totalProcessingTime), cs),
+          _row('Total time', _fmtDur(r.totalProcessingTime), cs),
           _row('Avg time', _fmtDur(r.avgProcessingTime), cs),
           _row('Alive for', _fmtDur(r.lifetime), cs),
         ],
@@ -361,16 +343,18 @@ class _PerformanceTabState extends State<PerformanceTab>
         children: [
           Text('Slow transition',
               style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: cs.error)),
+                  fontSize: 13, fontWeight: FontWeight.w600, color: cs.error)),
           const SizedBox(height: 12),
           _row('BLoC', entry.blocType, cs),
           _row('Event', entry.event?.toString() ?? '–', cs),
-          _row('Processing',
-              _fmtDur(entry.processingDuration!), cs),
-          _row('State', DevToolsEntry.tryToJson(entry.state)?.toString() ?? entry.state.toString(), cs),
-          _row('Timestamp',
+          _row('Processing', _fmtDur(entry.processingDuration!), cs),
+          _row(
+              'State',
+              DevToolsEntry.tryToJson(entry.state)?.toString() ??
+                  entry.state.toString(),
+              cs),
+          _row(
+              'Timestamp',
               '${entry.timestamp.hour}:${entry.timestamp.minute.toString().padLeft(2, '0')}:${entry.timestamp.second.toString().padLeft(2, '0')}',
               cs),
         ],
@@ -387,13 +371,12 @@ class _PerformanceTabState extends State<PerformanceTab>
           SizedBox(
             width: 90,
             child: Text(label,
-                style: TextStyle(
-                    fontSize: 10, color: cs.onSurfaceVariant)),
+                style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
           ),
           Expanded(
             child: Text(value,
-                style: const TextStyle(
-                    fontSize: 10, fontWeight: FontWeight.w500),
+                style:
+                    const TextStyle(fontSize: 10, fontWeight: FontWeight.w500),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis),
           ),
