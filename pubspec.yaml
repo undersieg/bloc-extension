@@ -4,7 +4,7 @@ description: >-
   Provides an in-app debugging panel and a Flutter DevTools browser extension
   with state history, BLoC connection graph, performance metrics, state diff,
   event timeline, and state replay.
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/undersieg/bloc-devtools-extension
 issue_tracker: https://github.com/undersieg/bloc-devtools-extension/issues
 

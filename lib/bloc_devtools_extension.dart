@@ -25,3 +25,4 @@ export 'src/dev_tools_store.dart';
 export 'src/service_extension.dart';
 export 'src/widgets/bloc_dev_tools_panel.dart';
 export 'src/widgets/dev_tools_store_provider.dart';
+export 'src/widgets/json_tree_view.dart';

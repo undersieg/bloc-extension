@@ -1,6 +1,6 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
+
+import 'json_tree_view.dart';
 
 /// Callback for actions sent to the running app via VM service.
 typedef ServiceAction = Future<void> Function(int index);
@@ -112,19 +112,19 @@ class _EntriesPanelState extends State<EntriesPanel> {
                   decoration: InputDecoration(
                     hintText: 'Filter blocs...',
                     hintStyle:
-                        TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                    prefixIcon: Icon(Icons.search,
-                        size: 14, color: cs.onSurfaceVariant),
+                    TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                    prefixIcon: Icon(Icons.search, size: 14,
+                        color: cs.onSurfaceVariant),
                     suffixIcon: _chipSearch.text.isNotEmpty
                         ? GestureDetector(
-                            onTap: () => _chipSearch.clear(),
-                            child: Icon(Icons.clear,
-                                size: 12, color: cs.onSurfaceVariant),
-                          )
+                      onTap: () => _chipSearch.clear(),
+                      child: Icon(Icons.clear, size: 12,
+                          color: cs.onSurfaceVariant),
+                    )
                         : null,
                     isDense: true,
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(color: cs.outlineVariant),
@@ -148,14 +148,14 @@ class _EntriesPanelState extends State<EntriesPanel> {
                     scrollDirection: Axis.horizontal,
                     children: [
                       _chip('All (${_all.length})', _filterBlocType == null,
-                          () => setState(() => _filterBlocType = null), cs),
+                              () => setState(() => _filterBlocType = null), cs),
                       for (final t in types)
                         Padding(
                           padding: const EdgeInsets.only(left: 6),
                           child: _chip(
                             '$t (${_all.where((e) => e['blocType'] == t).length})',
                             _filterBlocType == t,
-                            () => setState(() => _filterBlocType = t),
+                                () => setState(() => _filterBlocType = t),
                             cs,
                           ),
                         ),
@@ -179,7 +179,9 @@ class _EntriesPanelState extends State<EntriesPanel> {
           color: sel ? cs.primaryContainer : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: sel ? cs.primary.withValues(alpha: 0.5) : cs.outlineVariant,
+            color: sel
+                ? cs.primary.withValues(alpha: 0.5)
+                : cs.outlineVariant,
           ),
         ),
         child: Text(label,
@@ -210,13 +212,16 @@ class _EntriesPanelState extends State<EntriesPanel> {
       child: Row(
         children: [
           _btn(Icons.skip_previous, ok ? () => jump(0) : null),
-          _btn(Icons.chevron_left, ok && idx > 0 ? () => jump(idx - 1) : null),
+          _btn(Icons.chevron_left,
+              ok && idx > 0 ? () => jump(idx - 1) : null),
           Expanded(
             child: SliderTheme(
               data: SliderThemeData(
                 trackHeight: 4,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-                overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+                thumbShape:
+                const RoundSliderThumbShape(enabledThumbRadius: 8),
+                overlayShape:
+                const RoundSliderOverlayShape(overlayRadius: 16),
                 activeTrackColor: cs.primary,
                 inactiveTrackColor: cs.outlineVariant,
                 thumbColor: cs.primary,
@@ -277,8 +282,8 @@ class _EntriesPanelState extends State<EntriesPanel> {
                     Container(width: 1, height: 12, color: cs.outlineVariant),
                     const SizedBox(width: 8),
                     Text(_fmtGap(gap),
-                        style:
-                            TextStyle(fontSize: 9, color: cs.onSurfaceVariant)),
+                        style: TextStyle(
+                            fontSize: 9, color: cs.onSurfaceVariant)),
                   ],
                 ),
               ),
@@ -292,8 +297,8 @@ class _EntriesPanelState extends State<EntriesPanel> {
                   widget.onJumpTo?.call(realIdx);
                 },
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 7),
                   child: Row(
                     children: [
                       Container(
@@ -301,7 +306,8 @@ class _EntriesPanelState extends State<EntriesPanel> {
                         height: 12,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: isSelected ? cs.primary : Colors.transparent,
+                          color:
+                          isSelected ? cs.primary : Colors.transparent,
                           border: Border.all(
                             color: isSelected ? cs.primary : cs.outline,
                             width: isSelected ? 3 : 1.5,
@@ -328,7 +334,9 @@ class _EntriesPanelState extends State<EntriesPanel> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 4, vertical: 1),
                                   decoration: BoxDecoration(
-                                    color: (isBloc ? cs.primary : cs.tertiary)
+                                    color: (isBloc
+                                        ? cs.primary
+                                        : cs.tertiary)
                                         .withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
@@ -337,7 +345,9 @@ class _EntriesPanelState extends State<EntriesPanel> {
                                     style: TextStyle(
                                       fontSize: 8,
                                       fontWeight: FontWeight.w600,
-                                      color: isBloc ? cs.primary : cs.tertiary,
+                                      color: isBloc
+                                          ? cs.primary
+                                          : cs.tertiary,
                                     ),
                                   ),
                                 ),
@@ -349,7 +359,8 @@ class _EntriesPanelState extends State<EntriesPanel> {
                                     decoration: BoxDecoration(
                                       color: _perfColor(procUs)
                                           .withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(4),
+                                      borderRadius:
+                                      BorderRadius.circular(4),
                                     ),
                                     child: Text(
                                       '${(procUs / 1000).toStringAsFixed(1)}ms',
@@ -364,13 +375,16 @@ class _EntriesPanelState extends State<EntriesPanel> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              hasEvent ? '← $event' : stateType,
+                              hasEvent
+                                  ? '← $event'
+                                  : stateType,
                               style: TextStyle(
                                 fontSize: 10,
                                 color: hasEvent
                                     ? cs.onSurface
                                     : cs.onSurfaceVariant,
-                                fontFamily: hasEvent ? null : 'monospace',
+                                fontFamily:
+                                hasEvent ? null : 'monospace',
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -420,9 +434,9 @@ class _EntriesPanelState extends State<EntriesPanel> {
               const SizedBox(width: 8),
               if (hasPrev)
                 _toolbarChip('Diff', Icons.compare_arrows, _showDiff,
-                    () => setState(() => _showDiff = true), cs),
+                        () => setState(() => _showDiff = true), cs),
               _toolbarChip('JSON', Icons.code, !_showDiff,
-                  () => setState(() => _showDiff = false), cs),
+                      () => setState(() => _showDiff = false), cs),
               if (canReplay)
                 _toolbarChip('Replay', Icons.replay, false, () {
                   widget.onReplay?.call(_selectedIndex);
@@ -441,9 +455,14 @@ class _EntriesPanelState extends State<EntriesPanel> {
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(10),
             child: _showDiff && hasPrev
-                ? _buildDiff(entry['previousState'] as Map<String, dynamic>,
-                    entry['state'] as Map<String, dynamic>, cs)
-                : _buildJson(entry, cs),
+                ? _buildDiff(
+                entry['previousState'] as Map<String, dynamic>,
+                entry['state'] as Map<String, dynamic>,
+                cs)
+                : JsonTreeView(
+              data: entry,
+              rootLabel: entry['blocType'] as String? ?? 'state',
+            ),
           ),
         ),
       ],
@@ -480,21 +499,6 @@ class _EntriesPanelState extends State<EntriesPanel> {
     );
   }
 
-  Widget _buildJson(Map<String, dynamic> entry, ColorScheme cs) {
-    String text;
-    try {
-      text = const JsonEncoder.withIndent('  ').convert(entry);
-    } catch (_) {
-      text = entry.toString();
-    }
-    return SelectableText(text,
-        style: TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 11,
-            height: 1.5,
-            color: cs.onSurface));
-  }
-
   Widget _buildDiff(
       Map<String, dynamic> prev, Map<String, dynamic> curr, ColorScheme cs) {
     final allKeys = {...prev.keys, ...curr.keys};
@@ -509,8 +513,8 @@ class _EntriesPanelState extends State<EntriesPanel> {
         final diffColor = isAdded
             ? Colors.green
             : isRemoved
-                ? Colors.red
-                : Colors.orange;
+            ? Colors.red
+            : Colors.orange;
 
         diffs.add(Padding(
           padding: const EdgeInsets.only(bottom: 6),
@@ -526,11 +530,7 @@ class _EntriesPanelState extends State<EntriesPanel> {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  isAdded
-                      ? '+'
-                      : isRemoved
-                          ? '−'
-                          : '~',
+                  isAdded ? '+' : isRemoved ? '−' : '~',
                   style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -549,7 +549,8 @@ class _EntriesPanelState extends State<EntriesPanel> {
                     children: [
                       TextSpan(
                           text: '$key: ',
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                          style:
+                          const TextStyle(fontWeight: FontWeight.w600)),
                       if (!isAdded && !isRemoved) ...[
                         TextSpan(
                             text: '$oldVal',
@@ -559,11 +560,13 @@ class _EntriesPanelState extends State<EntriesPanel> {
                         const TextSpan(text: ' → '),
                         TextSpan(
                             text: '$newVal',
-                            style: TextStyle(color: Colors.green.shade400)),
+                            style:
+                            TextStyle(color: Colors.green.shade400)),
                       ] else if (isAdded)
                         TextSpan(
                             text: '$newVal',
-                            style: TextStyle(color: Colors.green.shade400))
+                            style:
+                            TextStyle(color: Colors.green.shade400))
                       else
                         TextSpan(
                             text: '$oldVal',

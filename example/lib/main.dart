@@ -24,6 +24,7 @@ class DemoApp extends StatelessWidget {
           BlocProvider(create: (_) => ThemeCubit()),
           BlocProvider(create: (_) => HistoryBloc()),
           BlocProvider(create: (_) => SettingsCubit()),
+          BlocProvider(create: (_) => ProjectsCubit()),
         ],
         child: BlocBuilder<ThemeCubit, ThemeState>(
           builder: (context, themeState) {
@@ -39,9 +40,9 @@ class DemoApp extends StatelessWidget {
               debugShowCheckedModeBanner: false,
               theme: ThemeData(
                 colorSchemeSeed:
-                    seedColors[themeState.seedColor] ?? Colors.deepPurple,
+                seedColors[themeState.seedColor] ?? Colors.deepPurple,
                 brightness:
-                    themeState.isDark ? Brightness.dark : Brightness.light,
+                themeState.isDark ? Brightness.dark : Brightness.light,
                 useMaterial3: true,
               ),
               home: const HomePage(),
@@ -96,6 +97,7 @@ class _HomePageState extends State<HomePage> {
         index: _tabIndex,
         children: const [
           CounterPage(),
+          ProjectsPage(),
           SettingsPage(),
           AboutPage(),
         ],
@@ -107,8 +109,11 @@ class _HomePageState extends State<HomePage> {
           NavigationDestination(
               icon: Icon(Icons.add_circle_outline), label: 'Counter'),
           NavigationDestination(
+              icon: Icon(Icons.folder_outlined), label: 'Projects'),
+          NavigationDestination(
               icon: Icon(Icons.settings_outlined), label: 'Settings'),
-          NavigationDestination(icon: Icon(Icons.info_outline), label: 'About'),
+          NavigationDestination(
+              icon: Icon(Icons.info_outline), label: 'About'),
         ],
       ),
     );
@@ -149,8 +154,8 @@ class CounterPage extends StatelessWidget {
                   builder: (context, histState) {
                     return Text(
                       '${histState.milestones.length} milestones recorded (every 5)',
-                      style:
-                          TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                      style: TextStyle(
+                          fontSize: 12, color: cs.onSurfaceVariant),
                     );
                   },
                 ),
@@ -187,7 +192,8 @@ class CounterPage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     OutlinedButton.icon(
-                      onPressed: () => context.read<CounterBloc>().add(Reset()),
+                      onPressed: () =>
+                          context.read<CounterBloc>().add(Reset()),
                       icon: const Icon(Icons.refresh, size: 16),
                       label: const Text('Reset counter'),
                     ),
@@ -219,13 +225,15 @@ class SettingsPage extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text('Settings', style: Theme.of(context).textTheme.titleLarge),
+            Text('Settings',
+                style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 4),
             Text('Change settings and watch the Diff view in DevTools',
                 style: TextStyle(
                     fontSize: 12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant)),
             const SizedBox(height: 24),
+
             ListTile(
               leading: const Icon(Icons.text_fields),
               title: const Text('Font size'),
@@ -235,10 +243,12 @@ class SettingsPage extends StatelessWidget {
                 max: 24,
                 divisions: 14,
                 label: '${settings.fontSize.round()}px',
-                onChanged: (v) => context.read<SettingsCubit>().setFontSize(v),
+                onChanged: (v) =>
+                    context.read<SettingsCubit>().setFontSize(v),
               ),
               trailing: Text('${settings.fontSize.round()}px'),
             ),
+
             ListTile(
               leading: const Icon(Icons.language),
               title: const Text('Language'),
@@ -255,24 +265,32 @@ class SettingsPage extends StatelessWidget {
                 },
               ),
             ),
+
             SwitchListTile(
               secondary: const Icon(Icons.notifications_outlined),
               title: const Text('Notifications'),
-              subtitle:
-                  Text(settings.notificationsEnabled ? 'Enabled' : 'Disabled'),
+              subtitle: Text(settings.notificationsEnabled
+                  ? 'Enabled'
+                  : 'Disabled'),
               value: settings.notificationsEnabled,
               onChanged: (_) =>
                   context.read<SettingsCubit>().toggleNotifications(),
             ),
+
             SwitchListTile(
               secondary: const Icon(Icons.save_outlined),
               title: const Text('Auto-save'),
-              subtitle: Text(settings.autoSave ? 'Enabled' : 'Disabled'),
+              subtitle:
+              Text(settings.autoSave ? 'Enabled' : 'Disabled'),
               value: settings.autoSave,
-              onChanged: (_) => context.read<SettingsCubit>().toggleAutoSave(),
+              onChanged: (_) =>
+                  context.read<SettingsCubit>().toggleAutoSave(),
             ),
+
             const Divider(height: 32),
-            Text('Theme color', style: Theme.of(context).textTheme.titleMedium),
+
+            Text('Theme color',
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             BlocBuilder<ThemeCubit, ThemeState>(
               builder: (context, theme) {
@@ -298,20 +316,123 @@ class SettingsPage extends StatelessWidget {
                           shape: BoxShape.circle,
                           border: selected
                               ? Border.all(
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
-                                  width: 3)
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface,
+                              width: 3)
                               : null,
                         ),
                         child: selected
                             ? const Icon(Icons.check,
-                                color: Colors.white, size: 20)
+                            color: Colors.white, size: 20)
                             : null,
                       ),
                     );
                   }).toList(),
                 );
               },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class ProjectsPage extends StatelessWidget {
+  const ProjectsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return BlocBuilder<ProjectsCubit, ProjectsState>(
+      builder: (context, state) {
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text('Projects',
+                style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 4),
+            Text(
+              'Large nested state — open DevTools → History → JSON to test the tree view',
+              style: TextStyle(
+                  fontSize: 12, color: cs.onSurfaceVariant),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '${state.projects.length} projects · ${state.teamMembers.length} team members',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 16),
+            for (int i = 0; i < state.projects.length; i++) ...[
+              Card(
+                child: ListTile(
+                  leading: IconButton(
+                    icon: Icon(
+                      state.projects[i]['isStarred'] == true
+                          ? Icons.star
+                          : Icons.star_border,
+                      color: state.projects[i]['isStarred'] == true
+                          ? Colors.amber
+                          : null,
+                    ),
+                    onPressed: () =>
+                        context.read<ProjectsCubit>().toggleStarred(i),
+                  ),
+                  title: Text(state.projects[i]['name'] as String),
+                  subtitle: Text(
+                    '${state.projects[i]['status']} · '
+                        '${(state.projects[i]['tasks'] as List?)?.length ?? 0} tasks',
+                  ),
+                  trailing: Chip(
+                    label: Text(
+                      (state.projects[i]['tags'] as List?)
+                          ?.first
+                          ?.toString() ??
+                          '',
+                      style: const TextStyle(fontSize: 10),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            const Divider(height: 32),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () =>
+                        context.read<ProjectsCubit>().refresh(),
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Refresh (new state)'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                ActionChip(
+                  label: const Text('Filter: in_progress'),
+                  onPressed: () => context
+                      .read<ProjectsCubit>()
+                      .setFilter('status', 'in_progress'),
+                ),
+                ActionChip(
+                  label: const Text('Filter: all'),
+                  onPressed: () => context
+                      .read<ProjectsCubit>()
+                      .setFilter('status', 'all'),
+                ),
+                ActionChip(
+                  label: const Text('Sort: name'),
+                  onPressed: () => context
+                      .read<ProjectsCubit>()
+                      .setFilter('sortBy', 'name'),
+                ),
+              ],
             ),
           ],
         );
@@ -329,7 +450,8 @@ class AboutPage extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('About this demo', style: Theme.of(context).textTheme.titleLarge),
+        Text('About this demo',
+            style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 16),
         _card(
           context,
@@ -363,27 +485,36 @@ class AboutPage extends StatelessWidget {
           subtitle: 'Multi-field state (font size, language, toggles). '
               'Best for testing the Diff view — change one field at a time.',
         ),
+        _card(
+          context,
+          icon: Icons.folder,
+          color: Colors.indigo,
+          title: 'ProjectsCubit',
+          subtitle: 'Large deeply-nested state with projects, tasks, subtasks, '
+              'team members, budgets, and activity logs. '
+              'Best for testing the collapsible JSON tree view — try Expand All.',
+        ),
         const SizedBox(height: 16),
-        Text('Try this:', style: Theme.of(context).textTheme.titleMedium),
+        Text('Try this:',
+            style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         _step('1. Tap +5 on the counter 3 times to trigger milestones'),
-        _step(
-            '2. Open DevTools → Graph tab to see the CounterBloc→HistoryBloc edge'),
+        _step('2. Open DevTools → Graph tab to see the CounterBloc→HistoryBloc edge'),
         _step('3. Go to Settings, change language and toggle notifications'),
-        _step(
-            '4. Open DevTools → History tab, select the last entry, tap Diff'),
-        _step('5. Check the Perf tab to see processing times per BLoC'),
-        _step(
-            '6. Tap Replay on any entry to push that state onto the live BLoC'),
+        _step('4. Open DevTools → History tab, select the last entry, tap Diff'),
+        _step('5. Go to Projects, tap a star or Refresh, then inspect the JSON tree'),
+        _step('6. In the JSON tree, use Expand All / Collapse All to navigate deep state'),
+        _step('7. Check the Perf tab to see processing times per BLoC'),
+        _step('8. Tap Replay on any entry to push that state onto the live BLoC'),
       ],
     );
   }
 
   Widget _card(BuildContext context,
       {required IconData icon,
-      required Color color,
-      required String title,
-      required String subtitle}) {
+        required Color color,
+        required String title,
+        required String subtitle}) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -405,7 +536,8 @@ class AboutPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('→ ', style: TextStyle(fontWeight: FontWeight.w600)),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 13))),
+          Expanded(
+              child: Text(text, style: const TextStyle(fontSize: 13))),
         ],
       ),
     );

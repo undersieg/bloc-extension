@@ -1,9 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 
 import '../dev_tools_entry.dart';
 import '../dev_tools_store.dart';
+import 'json_tree_view.dart';
 
 /// History tab: timeline, slider, filter chips, inspector with diff + replay.
 class HistoryTab extends StatefulWidget {
@@ -104,19 +103,19 @@ class _HistoryTabState extends State<HistoryTab>
                   decoration: InputDecoration(
                     hintText: 'Filter blocs...',
                     hintStyle:
-                        TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                    prefixIcon: Icon(Icons.search,
-                        size: 14, color: cs.onSurfaceVariant),
+                    TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                    prefixIcon: Icon(Icons.search, size: 14,
+                        color: cs.onSurfaceVariant),
                     suffixIcon: _chipSearch.text.isNotEmpty
                         ? GestureDetector(
-                            onTap: () => _chipSearch.clear(),
-                            child: Icon(Icons.clear,
-                                size: 12, color: cs.onSurfaceVariant),
-                          )
+                      onTap: () => _chipSearch.clear(),
+                      child: Icon(Icons.clear, size: 12,
+                          color: cs.onSurfaceVariant),
+                    )
                         : null,
                     isDense: true,
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(color: cs.outlineVariant),
@@ -185,8 +184,10 @@ class _HistoryTabState extends State<HistoryTab>
             child: SliderTheme(
               data: SliderThemeData(
                 trackHeight: 4,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-                overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+                thumbShape:
+                const RoundSliderThumbShape(enabledThumbRadius: 8),
+                overlayShape:
+                const RoundSliderOverlayShape(overlayRadius: 16),
                 activeTrackColor: cs.primary,
                 inactiveTrackColor: cs.outlineVariant,
                 thumbColor: cs.primary,
@@ -200,12 +201,15 @@ class _HistoryTabState extends State<HistoryTab>
                     ? (total - 1).toDouble().clamp(1, double.infinity)
                     : 1,
                 divisions: total > 1 ? total - 1 : null,
-                onChanged: hasEntries ? (v) => _s.jumpTo(v.round()) : null,
+                onChanged:
+                hasEntries ? (v) => _s.jumpTo(v.round()) : null,
               ),
             ),
           ),
           _SmallBtn(Icons.chevron_right, 'Next',
-              hasEntries && idx < total - 1 ? () => _s.jumpTo(idx + 1) : null),
+              hasEntries && idx < total - 1
+                  ? () => _s.jumpTo(idx + 1)
+                  : null),
           _SmallBtn(Icons.skip_next, 'Last',
               hasEntries ? () => _s.jumpTo(total - 1) : null),
         ],
@@ -265,71 +269,76 @@ class _HistoryTabState extends State<HistoryTab>
       ),
       child: entry == null
           ? Center(
-              child: Text('Tap an entry above to inspect',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: cs.onSurfaceVariant)))
+          child: Text('Tap an entry above to inspect',
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: cs.onSurfaceVariant)))
           : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            child: Row(
               children: [
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  child: Row(
-                    children: [
-                      Icon(Icons.data_object, size: 14, color: cs.primary),
-                      const SizedBox(width: 4),
-                      Text(entry.blocType,
-                          style: theme.textTheme.labelMedium
-                              ?.copyWith(fontWeight: FontWeight.w600)),
-                      const Spacer(),
-                      if (entry.previousState != null)
-                        _ToolbarChip(
-                          label: 'Diff',
-                          icon: Icons.compare_arrows,
-                          active: _showDiff,
-                          onTap: () => setState(() => _showDiff = !_showDiff),
-                        ),
-                      if (entry.previousState != null) const SizedBox(width: 4),
-                      _ToolbarChip(
-                        label: 'JSON',
-                        icon: Icons.code,
-                        active: !_showDiff,
-                        onTap: () => setState(() => _showDiff = false),
-                      ),
-                      const SizedBox(width: 8),
-                      if (_s.canReplay(entry.blocType))
-                        _ToolbarChip(
-                          label: 'Replay',
-                          icon: Icons.replay,
-                          active: false,
-                          color: Colors.orange,
-                          onTap: () {
-                            final ok = _s.replayState(entry);
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(ok
-                                      ? 'State applied to ${entry.blocType}'
-                                      : 'Failed to apply state'),
-                                  duration: const Duration(seconds: 1),
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                    ],
+                Icon(Icons.data_object, size: 14, color: cs.primary),
+                const SizedBox(width: 4),
+                Text(entry.blocType,
+                    style: theme.textTheme.labelMedium
+                        ?.copyWith(fontWeight: FontWeight.w600)),
+                const Spacer(),
+                if (entry.previousState != null)
+                  _ToolbarChip(
+                    label: 'Diff',
+                    icon: Icons.compare_arrows,
+                    active: _showDiff,
+                    onTap: () =>
+                        setState(() => _showDiff = !_showDiff),
                   ),
+                if (entry.previousState != null)
+                  const SizedBox(width: 4),
+                _ToolbarChip(
+                  label: 'JSON',
+                  icon: Icons.code,
+                  active: !_showDiff,
+                  onTap: () => setState(() => _showDiff = false),
                 ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
-                    child: _showDiff && entry.previousState != null
-                        ? _DiffView(entry: entry)
-                        : _JsonView(entry: entry),
+                const SizedBox(width: 8),
+                if (_s.canReplay(entry.blocType))
+                  _ToolbarChip(
+                    label: 'Replay',
+                    icon: Icons.replay,
+                    active: false,
+                    color: Colors.orange,
+                    onTap: () {
+                      final ok = _s.replayState(entry);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(ok
+                                ? 'State applied to ${entry.blocType}'
+                                : 'Failed to apply state'),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      }
+                    },
                   ),
-                ),
               ],
             ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+              child: _showDiff && entry.previousState != null
+                  ? _DiffView(entry: entry)
+                  : JsonTreeView(
+                data: entry.toDisplayMap(),
+                rootLabel: entry.blocType,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -412,7 +421,9 @@ class _FilterChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              color: selected ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+              color: selected
+                  ? cs.onPrimaryContainer
+                  : cs.onSurfaceVariant,
             )),
       ),
     );
@@ -442,7 +453,8 @@ class _TimelineTile extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final t = entry.timestamp;
-    final timeStr = '${t.hour.toString().padLeft(2, '0')}:'
+    final timeStr =
+        '${t.hour.toString().padLeft(2, '0')}:'
         '${t.minute.toString().padLeft(2, '0')}:'
         '${t.second.toString().padLeft(2, '0')}.'
         '${(t.millisecond ~/ 10).toString().padLeft(2, '0')}';
@@ -459,7 +471,8 @@ class _TimelineTile extends StatelessWidget {
                 Container(width: 1, height: 12, color: cs.outlineVariant),
                 const SizedBox(width: 8),
                 Text(_formatGap(gap!),
-                    style: TextStyle(fontSize: 9, color: cs.onSurfaceVariant)),
+                    style: TextStyle(
+                        fontSize: 9, color: cs.onSurfaceVariant)),
               ],
             ),
           ),
@@ -470,7 +483,8 @@ class _TimelineTile extends StatelessWidget {
           child: InkWell(
             onTap: onJump,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               child: Row(
                 children: [
                   Container(
@@ -515,8 +529,7 @@ class _TimelineTile extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 8,
                                   fontWeight: FontWeight.w600,
-                                  color:
-                                      entry.isBloc ? cs.primary : cs.tertiary,
+                                  color: entry.isBloc ? cs.primary : cs.tertiary,
                                 ),
                               ),
                             ),
@@ -526,9 +539,9 @@ class _TimelineTile extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 4, vertical: 1),
                                 decoration: BoxDecoration(
-                                  color:
-                                      _perfColor(entry.processingDuration!, cs)
-                                          .withValues(alpha: 0.15),
+                                  color: _perfColor(
+                                      entry.processingDuration!, cs)
+                                      .withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -546,12 +559,16 @@ class _TimelineTile extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          hasEvent ? '← ${entry.event}' : _statePreview,
+                          hasEvent
+                              ? '← ${entry.event}'
+                              : _statePreview,
                           style: TextStyle(
                             fontSize: 10,
-                            color:
-                                hasEvent ? cs.onSurface : cs.onSurfaceVariant,
-                            fontFamily: hasEvent ? null : 'monospace',
+                            color: hasEvent
+                                ? cs.onSurface
+                                : cs.onSurfaceVariant,
+                            fontFamily:
+                            hasEvent ? null : 'monospace',
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -589,27 +606,6 @@ class _TimelineTile extends StatelessWidget {
   }
 }
 
-class _JsonView extends StatelessWidget {
-  const _JsonView({required this.entry});
-  final DevToolsEntry entry;
-
-  @override
-  Widget build(BuildContext context) {
-    String text;
-    try {
-      text = const JsonEncoder.withIndent('  ').convert(entry.toDisplayMap());
-    } catch (_) {
-      text = entry.toDisplayMap().toString();
-    }
-    return SelectableText(text,
-        style: TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 11,
-            height: 1.5,
-            color: Theme.of(context).colorScheme.onSurface));
-  }
-}
-
 class _DiffView extends StatelessWidget {
   const _DiffView({required this.entry});
   final DevToolsEntry entry;
@@ -622,8 +618,7 @@ class _DiffView extends StatelessWidget {
     if (diff == null || diff.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(8),
-        child: Text(
-            'No field-level changes detected.\n'
+        child: Text('No field-level changes detected.\n'
             'Ensure your state class has a toJson() method.',
             style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
       );
@@ -650,8 +645,8 @@ class _DiffView extends StatelessWidget {
                     d.type == DiffType.added
                         ? '+'
                         : d.type == DiffType.removed
-                            ? '−'
-                            : '~',
+                        ? '−'
+                        : '~',
                     style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -671,7 +666,7 @@ class _DiffView extends StatelessWidget {
                         TextSpan(
                             text: '${d.field}: ',
                             style:
-                                const TextStyle(fontWeight: FontWeight.w600)),
+                            const TextStyle(fontWeight: FontWeight.w600)),
                         if (d.type == DiffType.changed) ...[
                           TextSpan(
                               text: '${d.oldValue}',
@@ -681,15 +676,18 @@ class _DiffView extends StatelessWidget {
                           const TextSpan(text: ' → '),
                           TextSpan(
                               text: '${d.newValue}',
-                              style: TextStyle(color: Colors.green.shade400)),
+                              style:
+                              TextStyle(color: Colors.green.shade400)),
                         ] else if (d.type == DiffType.added)
                           TextSpan(
                               text: '${d.newValue}',
-                              style: TextStyle(color: Colors.green.shade400))
+                              style:
+                              TextStyle(color: Colors.green.shade400))
                         else
                           TextSpan(
                               text: '${d.oldValue}',
-                              style: TextStyle(color: Colors.red.shade400)),
+                              style:
+                              TextStyle(color: Colors.red.shade400)),
                       ],
                     ),
                   ),
