@@ -1,5 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:bloc_devtools_extension/bloc_devtools_extension.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('BlocLifecycleRecord', () {

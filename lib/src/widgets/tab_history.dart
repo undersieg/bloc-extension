@@ -222,7 +222,7 @@ class _HistoryTabState extends State<HistoryTab>
           child: Text(
             _s.length == 0
                 ? 'No states recorded yet.\nInteract with your app to start.'
-                : 'No entries for "${_filterBlocType}".\nTap "All" to see everything.',
+                : 'No entries for "$_filterBlocType".\nTap "All" to see everything.',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium
                 ?.copyWith(color: cs.onSurfaceVariant),

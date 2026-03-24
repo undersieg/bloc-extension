@@ -1,12 +1,12 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:bloc_devtools_extension/bloc_devtools_extension.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers.dart';
 
 void main() {
   final now = DateTime(2026, 1, 1, 12, 0, 0);
 
-  DevToolsEntry _entry({
+  DevToolsEntry makeEntry({
     String blocType = 'TestBloc',
     Object? state = const TestState(1),
     Object? previousState,
@@ -29,7 +29,7 @@ void main() {
 
   group('DevToolsEntry', () {
     test('stores all fields', () {
-      final entry = _entry(
+      final entry = makeEntry(
         event: TestIncrement(),
         previousState: const TestState(0),
         processingDuration: const Duration(microseconds: 500),
@@ -46,7 +46,7 @@ void main() {
     });
 
     test('copyWith replaces only specified fields', () {
-      final original = _entry();
+      final original = makeEntry();
       final copied = original.copyWith(isSkipped: true, isBloc: false);
 
       expect(copied.blocType, original.blocType);
@@ -57,7 +57,7 @@ void main() {
     });
 
     test('copyWith preserves all fields when no arguments given', () {
-      final original = _entry(
+      final original = makeEntry(
         event: TestIncrement(),
         isBloc: true,
         isSkipped: true,
@@ -75,7 +75,7 @@ void main() {
 
   group('toDisplayMap', () {
     test('includes blocType, event, state, and timestamp', () {
-      final entry = _entry(event: TestIncrement());
+      final entry = makeEntry(event: TestIncrement());
       final map = entry.toDisplayMap();
 
       expect(map['blocType'], 'TestBloc');
@@ -85,15 +85,15 @@ void main() {
     });
 
     test('event defaults to (initial) when null', () {
-      final entry = _entry();
+      final entry = makeEntry();
       expect(entry.toDisplayMap()['event'], '(initial)');
     });
 
     test('includes processingMs only when duration is set', () {
-      final withDuration = _entry(
+      final withDuration = makeEntry(
         processingDuration: const Duration(microseconds: 1500),
       );
-      final withoutDuration = _entry();
+      final withoutDuration = makeEntry();
 
       expect(withDuration.toDisplayMap()['processingMs'], 1.5);
       expect(withoutDuration.toDisplayMap().containsKey('processingMs'), false);
@@ -116,20 +116,20 @@ void main() {
     });
 
     test('works with TestCubitState', () {
-      final result =
-          DevToolsEntry.tryToJson(const TestCubitState(label: 'x', count: 3));
+      final result = DevToolsEntry.tryToJson(
+          const TestCubitState(label: 'x', count: 3));
       expect(result, {'label': 'x', 'count': 3});
     });
   });
 
   group('computeDiff', () {
     test('returns null when previousState is null', () {
-      final entry = _entry(previousState: null);
+      final entry = makeEntry(previousState: null);
       expect(entry.computeDiff(), null);
     });
 
     test('returns null when states have no toJson()', () {
-      final entry = _entry(
+      final entry = makeEntry(
         state: 'plain string',
         previousState: 'other string',
       );
@@ -137,7 +137,7 @@ void main() {
     });
 
     test('returns null when states are identical', () {
-      final entry = _entry(
+      final entry = makeEntry(
         state: const TestState(5),
         previousState: const TestState(5),
       );
@@ -145,7 +145,7 @@ void main() {
     });
 
     test('detects changed fields', () {
-      final entry = _entry(
+      final entry = makeEntry(
         state: const TestState(2),
         previousState: const TestState(1),
       );
@@ -158,7 +158,7 @@ void main() {
     });
 
     test('detects added fields', () {
-      final entry = _entry(
+      final entry = makeEntry(
         state: const TestCubitState(label: 'a', count: 1),
         previousState: const TestState(1),
       );
@@ -169,7 +169,7 @@ void main() {
     });
 
     test('detects removed fields', () {
-      final entry = _entry(
+      final entry = makeEntry(
         state: const TestState(1),
         previousState: const TestCubitState(label: 'a', count: 1),
       );
@@ -180,7 +180,7 @@ void main() {
     });
 
     test('handles multi-field changes', () {
-      final entry = _entry(
+      final entry = makeEntry(
         state: const TestCubitState(label: 'new', count: 5),
         previousState: const TestCubitState(label: 'old', count: 3),
       );
@@ -196,7 +196,7 @@ void main() {
 
   group('toString', () {
     test('includes bloc type, event, and state', () {
-      final entry = _entry(event: TestIncrement());
+      final entry = makeEntry(event: TestIncrement());
       final s = entry.toString();
 
       expect(s, contains('TestBloc'));

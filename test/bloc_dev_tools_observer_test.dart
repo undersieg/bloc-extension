@@ -1,6 +1,6 @@
 import 'package:bloc/bloc.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:bloc_devtools_extension/bloc_devtools_extension.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers.dart';
 
@@ -148,8 +148,8 @@ void main() {
       cubit.increment();
 
       expect(store.length, 4);
-      expect(
-          store.entries[3].state, const TestCubitState(label: 'a', count: 2));
+      expect(store.entries[3].state,
+          const TestCubitState(label: 'a', count: 2));
     });
 
     test('Cubit transitions have no processingDuration', () {

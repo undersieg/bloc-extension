@@ -138,8 +138,9 @@ class _GraphTabState extends State<GraphTab>
                               .where((r) => r.instanceId == _draggingId)
                               .map((r) => r.blocType)
                               .firstOrNull;
-                          if (type == null || !_positions.containsKey(type))
+                          if (type == null || !_positions.containsKey(type)) {
                             return;
+                          }
                           setState(() {
                             final old = _positions[type]!;
                             _positions[type] = Offset(

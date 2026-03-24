@@ -387,7 +387,7 @@ class _PerformanceTabState extends State<PerformanceTab>
 
   String _fmtDur(Duration d) {
     final us = d.inMicroseconds;
-    if (us < 1000) return '${us}µs';
+    if (us < 1000) return '$usµs';
     return '${(us / 1000).toStringAsFixed(1)}ms';
   }
 

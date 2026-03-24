@@ -1,7 +1,7 @@
 # bloc_devtools_extension
 
 [![pub package](https://img.shields.io/pub/v/bloc_devtools_extension.svg)](https://pub.dev/packages/bloc_devtools_extension)
-[![CI](https://github.com/undersieg/bloc-devtools-extension/actions/workflows/ci.yml/badge.svg)](https://github.com/user/bloc_devtools_extension/actions/workflows/ci.yml)
+[![CI](https://github.com/undersieg/bloc-devtools-extension/actions/workflows/ci.yml/badge.svg)](https://github.com/undersieg/bloc-devtools-extension/actions/workflows/ci.yml)
 [![License: BSD-3](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 Time-travel dev tools for [flutter_bloc](https://pub.dev/packages/flutter_bloc), inspired by [Redux DevTools](https://pub.dev/packages/redux_dev_tools).

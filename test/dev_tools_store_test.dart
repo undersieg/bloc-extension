@@ -1,11 +1,11 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:bloc_devtools_extension/bloc_devtools_extension.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late DevToolsStore store;
   final now = DateTime(2026, 1, 1, 12, 0, 0);
 
-  DevToolsEntry _entry({
+  DevToolsEntry makeEntry({
     String blocType = 'TestBloc',
     int stateValue = 0,
     Object? event,
@@ -36,8 +36,8 @@ void main() {
     });
 
     test('addEntry appends and moves cursor to last', () {
-      store.addEntry(_entry(stateValue: 1));
-      store.addEntry(_entry(stateValue: 2));
+      store.addEntry(makeEntry(stateValue: 1));
+      store.addEntry(makeEntry(stateValue: 2));
 
       expect(store.length, 2);
       expect(store.currentIndex, 1);
@@ -45,9 +45,9 @@ void main() {
     });
 
     test('entries list is unmodifiable', () {
-      store.addEntry(_entry());
+      store.addEntry(makeEntry());
       expect(
-        () => (store.entries as List).add(_entry()),
+            () => (store.entries as List).add(makeEntry()),
         throwsA(isA<UnsupportedError>()),
       );
     });
@@ -55,9 +55,9 @@ void main() {
 
   group('navigation', () {
     setUp(() {
-      store.addEntry(_entry(stateValue: 0));
-      store.addEntry(_entry(stateValue: 1));
-      store.addEntry(_entry(stateValue: 2));
+      store.addEntry(makeEntry(stateValue: 0));
+      store.addEntry(makeEntry(stateValue: 1));
+      store.addEntry(makeEntry(stateValue: 2));
     });
 
     test('jumpTo moves cursor to valid index', () {
@@ -81,7 +81,7 @@ void main() {
 
   group('toggleSkip', () {
     test('toggles isSkipped on valid index', () {
-      store.addEntry(_entry());
+      store.addEntry(makeEntry());
       expect(store.entries[0].isSkipped, false);
 
       store.toggleSkip(0);
@@ -92,7 +92,7 @@ void main() {
     });
 
     test('ignores invalid index', () {
-      store.addEntry(_entry());
+      store.addEntry(makeEntry());
       store.toggleSkip(-1);
       store.toggleSkip(100);
       expect(store.entries[0].isSkipped, false);
@@ -101,9 +101,9 @@ void main() {
 
   group('activeEntries', () {
     test('excludes skipped entries', () {
-      store.addEntry(_entry(stateValue: 0));
-      store.addEntry(_entry(stateValue: 1));
-      store.addEntry(_entry(stateValue: 2));
+      store.addEntry(makeEntry(stateValue: 0));
+      store.addEntry(makeEntry(stateValue: 1));
+      store.addEntry(makeEntry(stateValue: 2));
       store.toggleSkip(1);
 
       expect(store.activeEntries.length, 2);
@@ -114,17 +114,17 @@ void main() {
 
   group('filtering', () {
     test('blocTypes returns unique types', () {
-      store.addEntry(_entry(blocType: 'A'));
-      store.addEntry(_entry(blocType: 'B'));
-      store.addEntry(_entry(blocType: 'A'));
+      store.addEntry(makeEntry(blocType: 'A'));
+      store.addEntry(makeEntry(blocType: 'B'));
+      store.addEntry(makeEntry(blocType: 'A'));
 
       expect(store.blocTypes, {'A', 'B'});
     });
 
     test('entriesForBloc filters by type', () {
-      store.addEntry(_entry(blocType: 'A', stateValue: 1));
-      store.addEntry(_entry(blocType: 'B', stateValue: 2));
-      store.addEntry(_entry(blocType: 'A', stateValue: 3));
+      store.addEntry(makeEntry(blocType: 'A', stateValue: 1));
+      store.addEntry(makeEntry(blocType: 'B', stateValue: 2));
+      store.addEntry(makeEntry(blocType: 'A', stateValue: 3));
 
       final aEntries = store.entriesForBloc('A');
       expect(aEntries.length, 2);
@@ -133,7 +133,7 @@ void main() {
     });
 
     test('entriesForBloc returns empty for unknown type', () {
-      store.addEntry(_entry(blocType: 'A'));
+      store.addEntry(makeEntry(blocType: 'A'));
       expect(store.entriesForBloc('Z'), isEmpty);
     });
   });
@@ -176,8 +176,7 @@ void main() {
       expect(record.totalProcessingTime, const Duration(microseconds: 300));
     });
 
-    test('recordTransitionMetrics with null duration increments count only',
-        () {
+    test('recordTransitionMetrics with null duration increments count only', () {
       store.recordCreate(blocType: 'A', instanceId: 1, isBloc: false);
 
       store.recordTransitionMetrics(1, null);
@@ -199,8 +198,8 @@ void main() {
       final t0 = DateTime(2026, 1, 1, 12, 0, 0, 0);
       final t1 = DateTime(2026, 1, 1, 12, 0, 0, 50);
 
-      store.addEntry(_entry(blocType: 'A', timestamp: t0));
-      store.addEntry(_entry(blocType: 'B', timestamp: t1));
+      store.addEntry(makeEntry(blocType: 'A', timestamp: t0));
+      store.addEntry(makeEntry(blocType: 'B', timestamp: t1));
 
       expect(store.relationships.length, 1);
       expect(store.relationships.first.sourceBlocType, 'A');
@@ -212,8 +211,8 @@ void main() {
       final t0 = DateTime(2026, 1, 1, 12, 0, 0, 0);
       final t1 = DateTime(2026, 1, 1, 12, 0, 0, 150);
 
-      store.addEntry(_entry(blocType: 'A', timestamp: t0));
-      store.addEntry(_entry(blocType: 'B', timestamp: t1));
+      store.addEntry(makeEntry(blocType: 'A', timestamp: t0));
+      store.addEntry(makeEntry(blocType: 'B', timestamp: t1));
 
       expect(store.relationships, isEmpty);
     });
@@ -222,8 +221,8 @@ void main() {
       final t0 = DateTime(2026, 1, 1, 12, 0, 0, 0);
       final t1 = DateTime(2026, 1, 1, 12, 0, 0, 10);
 
-      store.addEntry(_entry(blocType: 'A', timestamp: t0));
-      store.addEntry(_entry(blocType: 'A', timestamp: t1));
+      store.addEntry(makeEntry(blocType: 'A', timestamp: t0));
+      store.addEntry(makeEntry(blocType: 'A', timestamp: t1));
 
       expect(store.relationships, isEmpty);
     });
@@ -234,8 +233,8 @@ void main() {
       for (int i = 0; i < 3; i++) {
         final t0 = base.add(Duration(seconds: i * 2));
         final t1 = t0.add(const Duration(milliseconds: 20));
-        store.addEntry(_entry(blocType: 'A', timestamp: t0));
-        store.addEntry(_entry(blocType: 'B', timestamp: t1));
+        store.addEntry(makeEntry(blocType: 'A', timestamp: t0));
+        store.addEntry(makeEntry(blocType: 'B', timestamp: t1));
       }
 
       expect(store.relationships.length, 1);
@@ -245,11 +244,11 @@ void main() {
 
   group('performance metrics', () {
     test('entriesWithTiming returns only entries with duration', () {
-      store.addEntry(_entry(
+      store.addEntry(makeEntry(
         processingDuration: const Duration(microseconds: 100),
       ));
-      store.addEntry(_entry());
-      store.addEntry(_entry(
+      store.addEntry(makeEntry());
+      store.addEntry(makeEntry(
         processingDuration: const Duration(microseconds: 200),
       ));
 
@@ -257,10 +256,10 @@ void main() {
     });
 
     test('avgProcessingTime computes average', () {
-      store.addEntry(_entry(
+      store.addEntry(makeEntry(
         processingDuration: const Duration(microseconds: 100),
       ));
-      store.addEntry(_entry(
+      store.addEntry(makeEntry(
         processingDuration: const Duration(microseconds: 300),
       ));
 
@@ -268,20 +267,20 @@ void main() {
     });
 
     test('avgProcessingTime returns zero when no timed entries', () {
-      store.addEntry(_entry());
+      store.addEntry(makeEntry());
       expect(store.avgProcessingTime, Duration.zero);
     });
 
     test('slowestTransition returns entry with longest duration', () {
-      store.addEntry(_entry(
+      store.addEntry(makeEntry(
         stateValue: 1,
         processingDuration: const Duration(microseconds: 100),
       ));
-      store.addEntry(_entry(
+      store.addEntry(makeEntry(
         stateValue: 2,
         processingDuration: const Duration(microseconds: 500),
       ));
-      store.addEntry(_entry(
+      store.addEntry(makeEntry(
         stateValue: 3,
         processingDuration: const Duration(microseconds: 200),
       ));
@@ -290,14 +289,14 @@ void main() {
     });
 
     test('slowestTransition returns null when no timed entries', () {
-      store.addEntry(_entry());
+      store.addEntry(makeEntry());
       expect(store.slowestTransition, null);
     });
   });
 
   group('reset', () {
     test('clears entries, lifecycles, and relationships', () {
-      store.addEntry(_entry());
+      store.addEntry(makeEntry());
       store.recordCreate(blocType: 'A', instanceId: 1, isBloc: true);
 
       store.reset();
@@ -314,13 +313,13 @@ void main() {
       int count = 0;
       store.addListener(() => count++);
 
-      store.addEntry(_entry());
+      store.addEntry(makeEntry());
       expect(count, 1);
     });
 
     test('jumpTo notifies listeners', () {
-      store.addEntry(_entry());
-      store.addEntry(_entry());
+      store.addEntry(makeEntry());
+      store.addEntry(makeEntry());
 
       int count = 0;
       store.addListener(() => count++);
@@ -330,7 +329,7 @@ void main() {
     });
 
     test('reset notifies listeners', () {
-      store.addEntry(_entry());
+      store.addEntry(makeEntry());
 
       int count = 0;
       store.addListener(() => count++);

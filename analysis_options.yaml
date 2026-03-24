@@ -6,6 +6,7 @@ analyzer:
     missing_required_param: error
   exclude:
     - "extension/devtools/build/**"
+    - "devtools_extension/**"
 
 linter:
   rules:
